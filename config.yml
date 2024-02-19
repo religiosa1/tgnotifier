@@ -1,0 +1,6 @@
+env: "local"
+address: "localhost:6000"
+bot_token: "your bot token as given by botfather"
+api_key: 074E9FCF2108048D677E34310D07A3814F2D7FBBD996B2383017BDBC23C6
+recepients: 
+  - "recepient tgId (you can use @userinfobot to find it out)"
