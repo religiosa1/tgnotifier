@@ -12,7 +12,8 @@ import (
 )
 
 type RequestPayload struct {
-	Message string `json:"message"`
+	Message   string `json:"message"`
+	ParseMode string `json:"parse_mode"`
 }
 
 type ResponsePayload struct {
@@ -65,7 +66,7 @@ func Notify(logger *slog.Logger, bot *bot.Bot, key string) http.HandlerFunc {
 			logger.Info("No message field was provided")
 			return
 		}
-		err := bot.SendMessage(logger, payload.Message)
+		err := bot.SendMessage(logger, payload.Message, payload.ParseMode)
 		if err == nil {
 			resp.Success = true
 		} else {

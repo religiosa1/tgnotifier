@@ -14,10 +14,11 @@ import (
 type Bot struct {
 	token      string
 	recepients []string
+	httpClient *http.Client
 }
 
 func New(token string, recepients []string) *Bot {
-	return &Bot{token, recepients}
+	return &Bot{token, recepients, &http.Client{}}
 }
 
 // @see https://core.telegram.org/bots/api#sendmessage
@@ -42,31 +43,48 @@ const (
 	ParseModeMDLegacy = "Markdown"
 )
 
-func (bot *Bot) SendMessage(logger *slog.Logger, message string) error {
+func (bot *Bot) SendMessage(logger *slog.Logger, message string, parseMode string) error {
 	if l := len(message); l < 1 || l > 4096 {
 		return errors.New("invalid message length")
 	}
-	errCh := make(chan error)
+	if err := validateParseMode(parseMode); err != nil {
+		return err
+	}
+	errCh := make(chan error, len(bot.recepients))
 	var wg sync.WaitGroup
 	wg.Add(len(bot.recepients))
-	for _, chatId := range bot.recepients {
+	for i := 0; i < len(bot.recepients); i++ {
+		chatId := bot.recepients[0]
 		logger := logger.With(slog.String("chat_id", chatId))
-		go bot.sendMessage(logger, message, chatId, errCh, &wg)
+		go func() {
+			err := bot.sendMessage(logger, message, chatId)
+			if err != nil {
+				errCh <- err
+			}
+			wg.Done()
+		}()
 	}
 	go func() {
 		wg.Wait()
 		close(errCh)
 	}()
 
-	var result error = nil
+	var errs []error
 	for err := range errCh {
-		result = err
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
-	return result
+
+	if l := len(errs); l > 1 {
+		return fmt.Errorf("errors occurred while sending messages: %v", errs)
+	} else if l == 1 {
+		return errs[0]
+	}
+	return nil
 }
 
-func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string, errCh chan error, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string) error {
 	logger.Debug("Sending the notification")
 	endpointUrl := bot.methodUrl("sendMessage")
 	body, err := json.Marshal(SendMessagePayload{
@@ -76,44 +94,49 @@ func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string, 
 	})
 	if err != nil {
 		logger.Error("Error encoding the sendMessage body", err)
-		errCh <- err
-		return
+		return err
 	}
 	bodyReader := bytes.NewReader(body)
 
 	req, err := http.NewRequest("POST", endpointUrl, bodyReader)
 	if err != nil {
 		logger.Error("Error creating request:", err)
-		errCh <- err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := bot.httpClient.Do(req)
 	if err != nil {
 		logger.Error("Error sending request:", err)
-		errCh <- err
-		return
+		return err
 	}
 	defer resp.Body.Close()
 
 	var response SendMessageResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		logger.Error("Error reading response body:", err)
-		errCh <- err
-		return
+		return err
 	}
 
-	if response.Ok {
-		logger.Debug("Sent the notification", slog.Int("StatusCode", resp.StatusCode))
-	} else {
+	if !response.Ok {
 		logger.Error("Failed to call the API method", slog.Int("StatusCode", resp.StatusCode), slog.String("description", response.Description))
-		errCh <- errors.New(response.Description)
+		return errors.New(response.Description)
 	}
+	logger.Debug("Sent the notification", slog.Int("StatusCode", resp.StatusCode))
+	return nil
 }
 
 func (bot *Bot) methodUrl(method string) string {
 	escapedToken := url.PathEscape(bot.token)
 	escapedMethod := url.PathEscape(method)
 	return fmt.Sprintf("https://api.telegram.org/bot%s/%s", escapedToken, escapedMethod)
+}
+
+func validateParseMode(parseMode string) error {
+	switch parseMode {
+	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy, "":
+		return nil
+	default:
+		return errors.New("invalid parseMode value")
+	}
 }

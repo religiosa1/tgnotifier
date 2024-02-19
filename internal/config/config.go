@@ -35,6 +35,10 @@ func MustLoad(configPath string) *Config {
 		}
 	}
 
+	if len(cfg.Recepients) == 0 {
+		log.Fatalf("No recepients were provided in the config, operation is impossible")
+	}
+
 	if l := len(cfg.ApiKey); l < 60 {
 		log.Fatalf("Provided API Key's length must be at least 60 characters long, got %d", l)
 	}
