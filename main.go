@@ -44,7 +44,7 @@ func runServer(configPath string) {
 	fmt.Println(cfg)
 
 	log := setupLogger(cfg.Env)
-	bot := bot.New(cfg.BotToken)
+	bot := bot.New(cfg.BotToken, cfg.Recepients)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

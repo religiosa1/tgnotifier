@@ -65,8 +65,12 @@ func Notify(logger *slog.Logger, bot *bot.Bot, key string) http.HandlerFunc {
 			logger.Info("No message field was provided")
 			return
 		}
-		resp.Success = true
-		bot.SendMessage(payload.Message)
+		err := bot.SendMessage(logger, payload.Message)
+		if err == nil {
+			resp.Success = true
+		} else {
+			resp.Error = err.Error()
+		}
 	}
 }
 
