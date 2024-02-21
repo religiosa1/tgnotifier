@@ -41,11 +41,11 @@ func Notify(logger *slog.Logger, bot *bot.Bot, key string) http.HandlerFunc {
 			if requestKey == "" {
 				w.WriteHeader(http.StatusUnauthorized)
 				resp.Error = "Authentication Required"
-			} else {
-				w.WriteHeader(http.StatusForbidden)
-				resp.Error = "Authorization failed"
-				logger.Info("Invalid authorization key supplied", slog.String("key", key))
+				return
 			}
+			w.WriteHeader(http.StatusForbidden)
+			resp.Error = "Authorization failed"
+			logger.Info("Invalid authorization key supplied", slog.String("key", key))
 			return
 		}
 		var payload RequestPayload

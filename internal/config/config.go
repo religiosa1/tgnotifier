@@ -29,10 +29,8 @@ func MustLoad(configPath string) *Config {
 		if err := cleanenv.ReadEnv(&cfg); err != nil {
 			log.Fatal("Error loading configuration: ", err)
 		}
-	} else {
-		if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-			log.Fatalf("Error loading configuration %s: %s", configPath, err)
-		}
+	} else if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+		log.Fatalf("Error loading configuration %s: %s", configPath, err)
 	}
 
 	if len(cfg.Recepients) == 0 {
