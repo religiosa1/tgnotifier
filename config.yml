@@ -1,6 +1,9 @@
+# environment type, controls the logging, possible values are "local", "development", "production"
 env: "local"
+# address on which we're running the http server
 address: "localhost:6000"
 bot_token: "your bot token as given by botfather"
+# API key, passed in 'x-api-key' to authorize your requests. Can be generated with -generate-key flag
 api_key: 074E9FCF2108048D677E34310D07A3814F2D7FBBD996B2383017BDBC23C6
 recepients: 
   - "recepient tgId (you can use @userinfobot to find it out)"

@@ -41,7 +41,6 @@ func generateApiKey() {
 
 func runServer(configPath string) {
 	cfg := config.MustLoad(configPath)
-	fmt.Println(cfg)
 
 	log := setupLogger(cfg.Env)
 	bot := bot.New(cfg.BotToken, cfg.Recepients)
@@ -58,7 +57,7 @@ func runServer(configPath string) {
 			os.Exit(1)
 		}
 	}()
-	log.Info("Running bot http server", slog.String("address", cfg.Address))
+	log.Info("Running bot http server", slog.String("address", cfg.Address), slog.Any("recepients", cfg.Recepients))
 
 	<-done
 	log.Info("Server closed")

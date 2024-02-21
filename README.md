@@ -28,10 +28,10 @@ Alternatively, you can set all of the configuration with environment variables.
 
 Supported variables are:
 - ENV controls the loggger output, possible values are "local", "development", "production"
-- BOT_TOKEN
-- BOT_RECEPIENTS
-- BOT_ADDR "localhost:6000"`
-- BOT_API_KEY
+- BOT_TOKEN bot token as provided by botfather
+- BOT_RECEPIENTS list of recepients' telegramIds, separated by comma
+- BOT_ADDR address on which we're launching the http server, defaults to "localhost:6000"` 
+- BOT_API_KEY your API Key (see bellow)
 
 You need an API key, to authorize the incoming request. It should be a string
 of random characters at least 60 characters long. 
