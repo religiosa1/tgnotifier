@@ -13,7 +13,7 @@ func Healthcheck(bot *bot.Bot) http.HandlerFunc {
 		if !ok {
 			logger = slog.Default()
 		}
-		if err := bot.GetMe(logger); err != nil {
+		if _, err := bot.GetMe(logger); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		w.WriteHeader(http.StatusOK)

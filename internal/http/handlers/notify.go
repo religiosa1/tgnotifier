@@ -38,25 +38,26 @@ func Notify(bot *bot.Bot) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			if errors.Is(err, io.EOF) {
-				resp.Error = "{ message: string } body expected but none was supplied"
+				resp.ErrorMessage = "{ message: string } body expected but none was supplied"
 				logger.Info("No body was supplied")
-			} else {
-				resp.Error = err.Error()
-				logger.Info("Failed to decode the body", err)
+				return
 			}
+			resp.ErrorMessage = err.Error()
+			logger.Info("Failed to decode the body", err)
 			return
 		}
 		if payload.Message == "" {
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			resp.Error = "'message' field is required"
+			resp.ErrorMessage = "'message' field is required"
 			logger.Info("No message field was provided")
 			return
 		}
-		err := bot.SendMessage(logger, payload.Message, payload.ParseMode)
-		if err == nil {
-			resp.Success = true
-		} else {
-			resp.Error = err.Error()
+		if err := bot.SendMessage(logger, payload.Message, payload.ParseMode); err != nil {
+			// TODO: actually determine if it's a request error or error in server
+			w.WriteHeader(http.StatusBadRequest)
+			resp.ErrorMessage = err.Error()
+			return
 		}
+		resp.Success = true
 	}
 }

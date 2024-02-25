@@ -154,34 +154,33 @@ type GetMeResponse struct {
 	SupportsInlineQueries   bool   `json:"supports_inline_queries,omitempty"`
 }
 
-func (bot *Bot) GetMe(logger *slog.Logger) error {
+func (bot *Bot) GetMe(logger *slog.Logger) (*GetMeResponse, error) {
 	logger.Debug("getMe healthcheck request")
 	endpointUrl := bot.methodUrl("getMe")
 	req, err := http.NewRequest("GET", endpointUrl, nil)
 	if err != nil {
 		logger.Error("Error creating request:", err)
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := bot.httpClient.Do(req)
 	if err != nil {
 		logger.Error("Error sending request:", err)
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var getMeInfo BotResponse[GetMeResponse]
 	if err := json.NewDecoder(resp.Body).Decode(&getMeInfo); err != nil {
 		logger.Error("Error reading response body:", err)
-		return err
+		return nil, err
 	}
 	if !getMeInfo.Result.IsBot {
 		logger.Error("Unexpected response from getMe request, we're supposed to be a bot:", slog.Any("GetMeInfo", getMeInfo))
-		return errors.New("unexpected response from getMe request")
+		return &getMeInfo.Result, errors.New("unexpected response from getMe request")
 	}
-	logger.Info("Bot initialized", slog.Any("GetMeInfo", getMeInfo))
-	return nil
+	return &getMeInfo.Result, nil
 }
 
 //==============================================================================

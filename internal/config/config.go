@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Env        string   `yaml:"env" env:"ENV" env-default:"local"`
+	LogLevel   string   `yaml:"log_level" env:"BOT_LOG_LEVEL" env-default:"info"`
 	BotToken   string   `yaml:"bot_token" env:"BOT_TOKEN" env-required:"true"`
 	Recepients []string `yaml:"recepients" env:"BOT_RECEPIENTS" env-required:"true"`
 	Address    string   `yaml:"address" env:"BOT_ADDR" env-default:"localhost:6000"`
@@ -39,6 +40,15 @@ func MustLoad(configPath string) *Config {
 
 	if l := len(cfg.ApiKey); l < 60 {
 		log.Fatalf("Provided API Key's length must be at least 60 characters long, got %d", l)
+	}
+
+	switch cfg.LogLevel {
+	case "":
+		cfg.LogLevel = "info"
+	case "info", "debug", "warn", "error":
+		// everything is ok, no action needed
+	default:
+		log.Fatalf("Incorrect LogLevel value '%s'. Possible values are 'debug', 'info', 'warn', and 'error", cfg.LogLevel)
 	}
 
 	return &cfg

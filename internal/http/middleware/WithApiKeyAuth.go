@@ -21,12 +21,12 @@ func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
 				w.Header().Set("Content-Type", "application/json")
 				if requestKey == "" {
 					w.WriteHeader(http.StatusUnauthorized)
-					resp.Error = "Authentication Required"
+					resp.ErrorMessage = "Authentication Required"
 					logger.Info("No authorization header is supplied")
 					return
 				}
 				w.WriteHeader(http.StatusForbidden)
-				resp.Error = "Authorization failed"
+				resp.ErrorMessage = "Authorization failed"
 				logger.Info("Invalid authorization key supplied", slog.String("key", key))
 				return
 			}

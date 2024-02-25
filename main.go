@@ -43,13 +43,15 @@ func generateApiKey() {
 func runServer(configPath string) {
 	cfg := config.MustLoad(configPath)
 
-	log := setupLogger(cfg.Env)
+	log := setupLogger(cfg.Env, cfg.LogLevel)
 	bot := bot.New(cfg.BotToken, cfg.Recepients)
 
-	if err := bot.GetMe(log); err != nil {
+	botInfo, err := bot.GetMe(log)
+	if err != nil {
 		log.Error("Error accessing the telegram API with the provided bot token", err)
 		os.Exit(2)
 	}
+	log.Debug("Bot initialized", slog.Any("GetMeInfo", botInfo))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -78,7 +80,7 @@ func runServer(configPath string) {
 	log.Info("Server closed")
 }
 
-func setupLogger(env string) *slog.Logger {
+func setupLogger(env string, logLevel string) *slog.Logger {
 	const (
 		envLocal = "local"
 		envDev   = "development"
@@ -86,16 +88,34 @@ func setupLogger(env string) *slog.Logger {
 	)
 
 	var logger *slog.Logger
-
+	var programLevel = new(slog.LevelVar)
+	programLevel.Set(strLogLevelToEnumValue(logLevel))
+	hdlrOpts := &slog.HandlerOptions{Level: programLevel}
 	switch env {
 	case envLocal:
-		logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
+		logger = slog.New(slog.NewTextHandler(os.Stdout, hdlrOpts))
 	case envDev:
-		logger = slog.New((slog.NewJSONHandler(os.Stdout, nil)))
+		logger = slog.New((slog.NewJSONHandler(os.Stdout, hdlrOpts)))
 	case envProd:
-		logger = slog.New((slog.NewJSONHandler(os.Stdout, nil)))
+		logger = slog.New((slog.NewJSONHandler(os.Stdout, hdlrOpts)))
 	default:
 		log.Fatalf("Unknown environment type %s, available options are %s, %s %s", env, envLocal, envDev, envProd)
 	}
 	return logger
+}
+
+func strLogLevelToEnumValue(logLevel string) slog.Level {
+	switch logLevel {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		log.Fatalf("Unexpected log level %s", logLevel)
+		return slog.LevelInfo
+	}
 }
