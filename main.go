@@ -58,13 +58,13 @@ func runServer(configPath string) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("GET /", middleware.Pipe(
 			handlers.Healthcheck(bot),
-			middleware.WithLogger(log),
 			middleware.WithApiKeyAuth(cfg.ApiKey),
+			middleware.WithLogger(log),
 		))
 		mux.HandleFunc("POST /", middleware.Pipe(
 			handlers.Notify(bot),
-			middleware.WithLogger(log),
 			middleware.WithApiKeyAuth(cfg.ApiKey),
+			middleware.WithLogger(log),
 		))
 
 		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
