@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"simple-tg-notifier/internal/bot"
-
-	"github.com/google/uuid"
+	"simple-tg-notifier/internal/http/middleware"
+	"simple-tg-notifier/internal/http/models"
 )
 
 type RequestPayload struct {
@@ -16,38 +16,24 @@ type RequestPayload struct {
 	ParseMode string `json:"parse_mode"`
 }
 
-type ResponsePayload struct {
-	RequestId string `json:"requestId"`
-	Success   bool   `json:"success"`
-	Error     string `json:"error,omitempty"`
-}
-
-func Notify(logger *slog.Logger, bot *bot.Bot, key string) http.HandlerFunc {
+func Notify(bot *bot.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := uuid.NewString()
 		w.Header().Set("Content-Type", "application/json")
 
-		logger = logger.With(slog.String("request_id", id))
-		logRequest(logger, r)
+		ctx := r.Context()
+		logger, ok := ctx.Value(middleware.LoggingContextKey("logger")).(*slog.Logger)
+		if !ok {
+			logger = slog.Default()
+		}
+		id := ctx.Value(middleware.LoggingContextKey("request_id")).(string)
 
-		resp := ResponsePayload{RequestId: id}
+		resp := models.ResponsePayload{RequestId: id}
 		defer func() {
 			if err := json.NewEncoder(w).Encode(resp); err != nil {
 				logger.Error("Error encoding response", err)
 			}
 		}()
 
-		if isValid, requestKey := authorizeKey(key, r); !isValid {
-			if requestKey == "" {
-				w.WriteHeader(http.StatusUnauthorized)
-				resp.Error = "Authentication Required"
-				return
-			}
-			w.WriteHeader(http.StatusForbidden)
-			resp.Error = "Authorization failed"
-			logger.Info("Invalid authorization key supplied", slog.String("key", key))
-			return
-		}
 		var payload RequestPayload
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -73,22 +59,4 @@ func Notify(logger *slog.Logger, bot *bot.Bot, key string) http.HandlerFunc {
 			resp.Error = err.Error()
 		}
 	}
-}
-
-func logRequest(logger *slog.Logger, r *http.Request) {
-	logger.Info("Incoming request",
-		slog.String("method", r.Method),
-		slog.String("path", r.URL.Path),
-		slog.String("remote_addr", r.RemoteAddr),
-		slog.String("user_agent", r.UserAgent()),
-	)
-}
-
-func authorizeKey(key string, r *http.Request) (bool, string) {
-	requestKey := r.Header.Get("x-api-key")
-	if key == "" {
-		cookieKey, _ := r.Cookie("X-API-KEY")
-		requestKey = cookieKey.Value
-	}
-	return key == requestKey, requestKey
 }

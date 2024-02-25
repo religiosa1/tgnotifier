@@ -13,6 +13,7 @@ import (
 	"simple-tg-notifier/internal/bot"
 	"simple-tg-notifier/internal/config"
 	"simple-tg-notifier/internal/http/handlers"
+	"simple-tg-notifier/internal/http/middleware"
 	"strings"
 	"syscall"
 )
@@ -45,12 +46,26 @@ func runServer(configPath string) {
 	log := setupLogger(cfg.Env)
 	bot := bot.New(cfg.BotToken, cfg.Recepients)
 
+	if err := bot.GetMe(log); err != nil {
+		log.Error("Error accessing the telegram API with the provided bot token", err)
+		os.Exit(2)
+	}
+
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		mux := http.NewServeMux()
-		mux.HandleFunc("POST /notify", handlers.Notify(log, bot, cfg.ApiKey))
+		mux.HandleFunc("GET /", middleware.Pipe(
+			handlers.Healthcheck(bot),
+			middleware.WithLogger(log),
+			middleware.WithApiKeyAuth(cfg.ApiKey),
+		))
+		mux.HandleFunc("POST /", middleware.Pipe(
+			handlers.Notify(bot),
+			middleware.WithLogger(log),
+			middleware.WithApiKeyAuth(cfg.ApiKey),
+		))
 
 		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
 			log.Error("Error starting the server", err)

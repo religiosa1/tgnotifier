@@ -53,13 +53,13 @@ Run the server:
 ./simple_tg_notifier
 ```
 
-Test that API is working as expected
+### To send notification:
 ```sh
 curl -X POST \
   -H "Content-Type: application/json" \
   -H "x-api-key: YOUR_API_KEY" \
   -d '{"message":"Your message"}' \
-  http://localhost:6000/notify
+  http://localhost:6000/
 ```
 
 You can pass optional `parse_mode` value, to modify, how the passed message is 
@@ -76,6 +76,11 @@ Supported `parse_mode` values are:
 - MarkdownV2
 - HTML
 - Markdown
+
+### Healthcheck request
+```sh
+curl -X GET -H "x-api-key: YOUR_API_KEY" http://localhost:6000/
+```
 
 ## License
 Simple telegram notifier is MIT licensed.
