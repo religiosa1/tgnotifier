@@ -127,6 +127,15 @@ func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string) 
 	return nil
 }
 
+func validateParseMode(parseMode string) error {
+	switch parseMode {
+	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy, "":
+		return nil
+	default:
+		return errors.New("invalid parseMode value")
+	}
+}
+
 //==============================================================================
 
 // @see https://core.telegram.org/bots/api#user
@@ -181,13 +190,4 @@ func (bot *Bot) methodUrl(method string) string {
 	escapedToken := url.PathEscape(bot.token)
 	escapedMethod := url.PathEscape(method)
 	return fmt.Sprintf("https://api.telegram.org/bot%s/%s", escapedToken, escapedMethod)
-}
-
-func validateParseMode(parseMode string) error {
-	switch parseMode {
-	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy, "":
-		return nil
-	default:
-		return errors.New("invalid parseMode value")
-	}
 }
