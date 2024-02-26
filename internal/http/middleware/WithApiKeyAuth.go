@@ -3,7 +3,8 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
-	"simple-tg-notifier/internal/http/models"
+
+	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
 func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
@@ -21,12 +22,12 @@ func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
 				w.Header().Set("Content-Type", "application/json")
 				if requestKey == "" {
 					w.WriteHeader(http.StatusUnauthorized)
-					resp.ErrorMessage = "Authentication Required"
+					resp.Error = "Authentication Required"
 					logger.Info("No authorization header is supplied")
 					return
 				}
 				w.WriteHeader(http.StatusForbidden)
-				resp.ErrorMessage = "Authorization failed"
+				resp.Error = "Authorization failed"
 				logger.Info("Invalid authorization key supplied", slog.String("key", key))
 				return
 			}

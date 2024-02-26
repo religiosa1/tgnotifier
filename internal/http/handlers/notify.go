@@ -6,9 +6,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"simple-tg-notifier/internal/bot"
-	"simple-tg-notifier/internal/http/middleware"
-	"simple-tg-notifier/internal/http/models"
+
+	"github.com/religiosa1/tgnotifier"
+	"github.com/religiosa1/tgnotifier/internal/http/middleware"
+	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
 type RequestPayload struct {
@@ -16,7 +17,7 @@ type RequestPayload struct {
 	ParseMode string `json:"parse_mode"`
 }
 
-func Notify(bot *bot.Bot) http.HandlerFunc {
+func Notify(botInstance *tgnotifier.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -38,24 +39,27 @@ func Notify(bot *bot.Bot) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			if errors.Is(err, io.EOF) {
-				resp.ErrorMessage = "{ message: string } body expected but none was supplied"
+				resp.Error = "{ message: string } body expected but none was supplied"
 				logger.Info("No body was supplied")
 				return
 			}
-			resp.ErrorMessage = err.Error()
+			resp.Error = err.Error()
 			logger.Info("Failed to decode the body", err)
 			return
 		}
 		if payload.Message == "" {
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			resp.ErrorMessage = "'message' field is required"
+			resp.Error = "'message' field is required"
 			logger.Info("No message field was provided")
 			return
 		}
-		if err := bot.SendMessage(logger, payload.Message, payload.ParseMode); err != nil {
-			// TODO: actually determine if it's a request error or error in server
-			w.WriteHeader(http.StatusBadRequest)
-			resp.ErrorMessage = err.Error()
+		if err := botInstance.SendMessage(logger, payload.Message, payload.ParseMode); err != nil {
+			if errors.Is(err, tgnotifier.ErrBot) {
+				w.WriteHeader(http.StatusBadRequest)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			resp.Error = err.Error()
 			return
 		}
 		resp.Success = true

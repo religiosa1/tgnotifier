@@ -18,7 +18,7 @@ type Config struct {
 
 func MustLoad(configPath string) *Config {
 	if configPath == "" {
-		configPath = os.Getenv("CONFIG_PATH")
+		configPath = os.Getenv("BOT_CONFIG_PATH")
 	}
 	if configPath == "" {
 		configPath = "config.yml"

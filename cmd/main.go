@@ -10,12 +10,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"simple-tg-notifier/internal/bot"
-	"simple-tg-notifier/internal/config"
-	"simple-tg-notifier/internal/http/handlers"
-	"simple-tg-notifier/internal/http/middleware"
 	"strings"
 	"syscall"
+
+	"github.com/religiosa1/tgnotifier"
+	"github.com/religiosa1/tgnotifier/internal/config"
+	"github.com/religiosa1/tgnotifier/internal/http/handlers"
+	"github.com/religiosa1/tgnotifier/internal/http/middleware"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func runServer(configPath string) {
 	cfg := config.MustLoad(configPath)
 
 	log := setupLogger(cfg.Env, cfg.LogLevel)
-	bot := bot.New(cfg.BotToken, cfg.Recepients)
+	bot := tgnotifier.New(cfg.BotToken, cfg.Recepients)
 
 	botInfo, err := bot.GetMe(log)
 	if err != nil {

@@ -1,4 +1,4 @@
-module simple-tg-notifier
+module github.com/religiosa1/tgnotifier
 
 go 1.22.0
 

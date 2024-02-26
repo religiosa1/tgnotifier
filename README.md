@@ -1,25 +1,39 @@
-# Simple telegram notifier bot
+# Simple telegram notification service
 
-Simple [telegram](https://telegram.org/) notification service, that allows you to 
-send text messages to a prefined list of users through a REST API.
+Allows you to send [telegram](https://telegram.org/) text messages to a small 
+list of predefined users through a REST API.
 
-It can be used to send you notifications about pipeline errors/completions, 
-some long running process finished etc.
+It can be used to send notifications about pipeline errors/completions, 
+some long running process finished, etc.
 
-It's intended to be simple to deploy and use, without much configuration, notifying 
-a small initially known list of users. If you need user permissions, notification 
-channels and ability to join/leave them, take a look at 
-[notifier](https://github.com/religiosa1/notifier).
+It's intended to be simple to deploy and use, without much configuration. 
+If you need user permissions, admin page, notification channels with the ability 
+to join/leave them, take a look at [notifier](https://github.com/religiosa1/notifier).
 
-## Building
+## Building and setup
 
 To build the application you need [Go](https://go.dev/) version 1.22 or higher.
 
 ```sh
-go build
+go build -o tgnotifier ./cmd/main.go 
+# on windows:
+go build -o tgnotifier.exe .\cmd\main.go
 ```
 
 Refer to the go docs on crosscompilation and stuff.
+
+To use the service you will need to connect a telegram bot via a bot token, 
+which will send the notifications. You can create a bot through
+telegram's interface called BotFather, as described in their 
+[tutorial](https://core.telegram.org/bots/tutorial#getting-ready).
+
+Besides that, you need to know telegram id's of users to whom you want to 
+send the notifications. You can do that via the [userinfobot](https://t.me/userinfobot).
+
+Before you can recieve notifications from the bot, you must iniate the communication
+with it. Go to it's page (through the username, provided by the BotFather) and
+click on the "start" button. This applies to every user in your recepients list
+that want to get the notifications.
 
 ## Config
 
@@ -31,38 +45,46 @@ available configuration values.
 
 Supported enviromental variables are:
 - ENV controls the loggger output, possible values are "local", "development", "production"
-- BOT_TOKEN bot token as provided by botfather
-- BOT_RECEPIENTS list of recepients' telegramIds, separated by comma
-- BOT_ADDR address on which we're launching the http server, defaults to "localhost:6000"` 
+- BOT_TOKEN bot token as provided by BotFather
+- BOT_RECEPIENTS list of recepients' telegram Ids, separated by comma
 - BOT_API_KEY your API Key (see bellow)
+- BOT_LOG_LEVEL verbosity level of logs, possible values are 'debug', 'info', 'warn', and 'error'
+- BOT_ADDR address on which we're launching the http server, defaults to "localhost:6000"`
+- BOT_CONFIG_PATH path to configuration file
 
-By default, app tries to load the file `./config.yml`. You can override which file
-to load calling it with the flag:
+Upon launch, service tries to load the configuration file specified in the 
+`BOT_CONFIG_PATH` environment variable, or `./config.yml` if it's empty. 
+You can override which file to load calling it with the flag:
 
 ```sh
-./simple_tg_notifier --config foo.yml
+./tgnotifier --config foo.yml
 ```
 
 Alternatively, you can set all of the configuration with environment variables.
 
-You need an API key, to authorize the incoming request. It should be a string
-of random characters at least 60 characters long. 
+### API KEY
+You need an API key, to authorize the incoming request. 
+It should be a string of random characters at least 60 characters long. 
 
 You can generate an API key with the corresponding flag:
 
 ```sh
-./simple_tg_notifier --generate-key # it will output a new key to your terminal
+./tgnotifier --generate-key # it will output a new key to your terminal
 # Copy and paste it into the config/put it in env under the BOT_API_KEY
 ```
 
-This key should be supplied with each http request to the bot via the header `x-api-key`
-or with the cookie `X-API-KEY`.
+This key should be supplied with each http request to the bot via the header 
+`x-api-key` or with the cookie `X-API-KEY`.
+
+IMPORTANT! Make sure, you don't expose your API key (i.e. don't send those requests
+directly from a web page), as anyone who has network access to the service and
+has the key can send those notification requests.
 
 ## Usage
 
 Run the server:
 ```sh
-./simple_tg_notifier
+./tgnotifier
 ```
 On start, application will try to check if the supplied bot token is correct, by
 quering the telegram API. If this process fails, the app immediately exits with
@@ -88,7 +110,7 @@ curl -X POST \
 You can pass optional `parse_mode` value, to modify, how the passed message is 
 parsed:
 
-```json
+```jsonc
 {
   "message": "Your message",
   "parse_mode": "MarkdownV2" // OPTIONAL
@@ -115,4 +137,4 @@ It will perform a query to telegram bot API, verifying that the bot token is sti
 valid, there's no network outages etc.
 
 ## License
-Simple telegram notifier is MIT licensed.
+tgnotifier is MIT licensed.

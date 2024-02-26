@@ -3,11 +3,12 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
-	"simple-tg-notifier/internal/bot"
-	"simple-tg-notifier/internal/http/middleware"
+
+	"github.com/religiosa1/tgnotifier"
+	"github.com/religiosa1/tgnotifier/internal/http/middleware"
 )
 
-func Healthcheck(bot *bot.Bot) http.HandlerFunc {
+func Healthcheck(bot *tgnotifier.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger, ok := r.Context().Value(middleware.LoggingContextKey("logger")).(*slog.Logger)
 		if !ok {

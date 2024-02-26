@@ -1,4 +1,4 @@
-package bot
+package tgnotifier
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 
 type Bot struct {
 	token      string
-	recepients []string
+	Recepients []string
 	httpClient *http.Client
 }
 
@@ -44,18 +44,33 @@ const (
 	ParseModeMDLegacy = "Markdown"
 )
 
+var ErrBot = errors.New("bot error")
+
+type botError struct {
+	message string
+}
+
+func (e botError) Error() string {
+	return e.message
+}
+func (e botError) Is(target error) bool { return target == ErrBot }
+
 func (bot *Bot) SendMessage(logger *slog.Logger, message string, parseMode string) error {
 	if l := len(message); l < 1 || l > 4096 {
-		return errors.New("invalid message length")
+		return botError{"invalid message length"}
 	}
 	if err := validateParseMode(parseMode); err != nil {
 		return err
 	}
-	errCh := make(chan error, len(bot.recepients))
+	if len(bot.Recepients) == 0 {
+		logger.Info("Empty recepients  list during SendMessage call, exiting")
+		return nil
+	}
+	errCh := make(chan error, len(bot.Recepients))
 	var wg sync.WaitGroup
-	wg.Add(len(bot.recepients))
-	for i := 0; i < len(bot.recepients); i++ {
-		chatId := bot.recepients[0]
+	wg.Add(len(bot.Recepients))
+	for i := 0; i < len(bot.Recepients); i++ {
+		chatId := bot.Recepients[0]
 		logger := logger.With(slog.String("chat_id", chatId))
 		go func() {
 			err := bot.sendMessage(logger, message, chatId)
@@ -76,13 +91,7 @@ func (bot *Bot) SendMessage(logger *slog.Logger, message string, parseMode strin
 			errs = append(errs, err)
 		}
 	}
-
-	if l := len(errs); l > 1 {
-		return fmt.Errorf("errors occurred while sending messages: %v", errs)
-	} else if l == 1 {
-		return errs[0]
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string) error {
@@ -121,7 +130,7 @@ func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string) 
 
 	if !sendMessageResponse.Ok {
 		logger.Error("Failed to call the API method", slog.Int("StatusCode", resp.StatusCode), slog.String("description", sendMessageResponse.Description))
-		return errors.New(sendMessageResponse.Description)
+		return botError{sendMessageResponse.Description}
 	}
 	logger.Debug("Sent the notification", slog.Int("StatusCode", resp.StatusCode))
 	return nil
@@ -132,7 +141,7 @@ func validateParseMode(parseMode string) error {
 	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy, "":
 		return nil
 	default:
-		return errors.New("invalid parseMode value")
+		return botError{"invalid parseMode value"}
 	}
 }
 
@@ -176,9 +185,13 @@ func (bot *Bot) GetMe(logger *slog.Logger) (*GetMeResponse, error) {
 		logger.Error("Error reading response body:", err)
 		return nil, err
 	}
+	if !getMeInfo.Ok {
+		logger.Error("Failed to call getMe method", slog.Int("StatusCode", resp.StatusCode), slog.String("description", getMeInfo.Description))
+		return nil, botError{getMeInfo.Description}
+	}
 	if !getMeInfo.Result.IsBot {
 		logger.Error("Unexpected response from getMe request, we're supposed to be a bot:", slog.Any("GetMeInfo", getMeInfo))
-		return &getMeInfo.Result, errors.New("unexpected response from getMe request")
+		return nil, botError{"unexpected response from getMe request - not a bot"}
 	}
 	return &getMeInfo.Result, nil
 }
