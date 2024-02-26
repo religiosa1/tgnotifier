@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [2.0.0] - 2024.02.26
+## [1.0.0] - 2024.02.26
 ### Changed
 - module renamed to tgnofier, to adhere to golang naming conventions
 - config filename env variable renamed to `BOT_CONFIG_FILE`
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - small fixes in logging
 
-## [1.0.0] - 2024.02.25
+## [0.1.0] - 2024.02.25
 ### Added
 - preflight check for BOT token/general connectivity -- attempt to perform a request 
   to telgram API, prior to launching the HTTP server
