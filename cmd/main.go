@@ -26,6 +26,13 @@ func main() {
 	flag.StringVar(&configPath, "config", "", "Configuration file name")
 	flag.Parse()
 
+	if configPath == "" {
+		configPath = os.Getenv("BOT_CONFIG_PATH")
+	}
+	if configPath == "" {
+		configPath = "config.yml"
+	}
+
 	if apiKeyFlag {
 		generateApiKey()
 	} else {
