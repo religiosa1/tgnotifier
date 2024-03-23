@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/religiosa1/tgnotifier"
 	"github.com/religiosa1/tgnotifier/internal/http/middleware"
 	"github.com/religiosa1/tgnotifier/internal/http/models"
@@ -22,11 +23,15 @@ func Notify(botInstance *tgnotifier.Bot) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		ctx := r.Context()
-		logger, ok := ctx.Value(middleware.LoggingContextKey("logger")).(*slog.Logger)
+		logger, ok := ctx.Value(middleware.LogginContextLogger).(*slog.Logger)
 		if !ok {
 			logger = slog.Default()
 		}
-		id := ctx.Value(middleware.LoggingContextKey("request_id")).(string)
+		id, ok := ctx.Value(middleware.LoggingContextRequestId).(string)
+		if !ok {
+			logger.Error("No Logging context id found")
+			id = uuid.NewString()
+		}
 
 		resp := models.ResponsePayload{RequestId: id}
 		defer func() {

@@ -10,7 +10,7 @@ import (
 
 func Healthcheck(bot *tgnotifier.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger, ok := r.Context().Value(middleware.LoggingContextKey("logger")).(*slog.Logger)
+		logger, ok := r.Context().Value(middleware.LogginContextLogger).(*slog.Logger)
 		if !ok {
 			logger = slog.Default()
 		}

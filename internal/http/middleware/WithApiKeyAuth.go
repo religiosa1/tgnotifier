@@ -13,7 +13,7 @@ func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
 
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			logger, ok := ctx.Value(LoggingContextKey("logger")).(*slog.Logger)
+			logger, ok := ctx.Value(LogginContextLogger).(*slog.Logger)
 			if !ok {
 				logger = slog.Default()
 			}

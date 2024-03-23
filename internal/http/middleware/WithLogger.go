@@ -9,7 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type LoggingContextKey string
+type LogginContextKey string
+
+const LoggingContextRequestId = LogginContextKey("logging_context.request_id")
+const LogginContextLogger = LogginContextKey("logging_context.logger")
+
 type LoggingContext struct {
 	Logger    *slog.Logger
 	RequestId string
@@ -21,8 +25,8 @@ func WithLogger(logger *slog.Logger) func(next http.HandlerFunc) http.HandlerFun
 			id := uuid.NewString()
 			newLogger := logger.With(slog.String("request_id", id))
 
-			ctx := context.WithValue(r.Context(), LoggingContextKey("request_id"), id)
-			ctx = context.WithValue(ctx, LoggingContextKey("logger"), newLogger)
+			ctx := context.WithValue(r.Context(), LoggingContextRequestId, id)
+			ctx = context.WithValue(ctx, LogginContextLogger, newLogger)
 
 			newLogger.Info("Incoming request",
 				slog.String("method", r.Method),
