@@ -103,28 +103,28 @@ func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string) 
 		ParseMode: ParseModeMD,
 	})
 	if err != nil {
-		logger.Error("Error encoding the sendMessage body", err)
+		logger.Error("Error encoding the sendMessage body", slog.Any("error", err))
 		return err
 	}
 	bodyReader := bytes.NewReader(body)
 
 	req, err := http.NewRequest("POST", endpointUrl, bodyReader)
 	if err != nil {
-		logger.Error("Error creating request:", err)
+		logger.Error("Error creating request:", slog.Any("error", err))
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := bot.httpClient.Do(req)
 	if err != nil {
-		logger.Error("Error sending request:", err)
+		logger.Error("Error sending request:", slog.Any("error", err))
 		return err
 	}
 	defer resp.Body.Close()
 
 	var sendMessageResponse BotResponse[struct{}]
 	if err := json.NewDecoder(resp.Body).Decode(&sendMessageResponse); err != nil {
-		logger.Error("Error reading response body:", err)
+		logger.Error("Error reading response body:", slog.Any("error", err))
 		return err
 	}
 
@@ -168,21 +168,21 @@ func (bot *Bot) GetMe(logger *slog.Logger) (*GetMeResponse, error) {
 	endpointUrl := bot.methodUrl("getMe")
 	req, err := http.NewRequest("GET", endpointUrl, nil)
 	if err != nil {
-		logger.Error("Error creating request:", err)
+		logger.Error("Error creating request:", slog.Any("error", err))
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := bot.httpClient.Do(req)
 	if err != nil {
-		logger.Error("Error sending request:", err)
+		logger.Error("Error sending request:", slog.Any("error", err))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var getMeInfo BotResponse[GetMeResponse]
 	if err := json.NewDecoder(resp.Body).Decode(&getMeInfo); err != nil {
-		logger.Error("Error reading response body:", err)
+		logger.Error("Error reading response body:", slog.Any("error", err))
 		return nil, err
 	}
 	if !getMeInfo.Ok {

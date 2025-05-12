@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/religiosa1/tgnotifier"
 	"github.com/religiosa1/tgnotifier/internal/http/middleware"
 	"github.com/religiosa1/tgnotifier/internal/http/models"
@@ -22,51 +21,45 @@ func Notify(botInstance *tgnotifier.Bot) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		ctx := r.Context()
-		logger, ok := ctx.Value(middleware.LogginContextLogger).(*slog.Logger)
-		if !ok {
-			logger = slog.Default()
-		}
-		id, ok := ctx.Value(middleware.LoggingContextRequestId).(string)
-		if !ok {
-			logger.Error("No Logging context id found")
-			id = uuid.NewString()
+		logger := middleware.GetLogger(r.Context())
+
+		writeResponse := func(statusCode int, payload models.ResponsePayload) {
+			w.WriteHeader(statusCode)
+			if err := json.NewEncoder(w).Encode(payload); err != nil {
+				logger.Error("Error encoding response", slog.Any("error", err))
+			}
 		}
 
-		resp := models.ResponsePayload{RequestId: id}
-		defer func() {
-			if err := json.NewEncoder(w).Encode(resp); err != nil {
-				logger.Error("Error encoding response", err)
-			}
-		}()
+		resp := models.ResponsePayload{RequestId: middleware.GetRequestId(r.Context())}
 
 		var payload RequestPayload
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
 			if errors.Is(err, io.EOF) {
 				resp.Error = "{ message: string } body expected but none was supplied"
 				logger.Info("No body was supplied")
 				return
 			}
 			resp.Error = err.Error()
-			logger.Info("Failed to decode the body", err)
+			logger.Info("Failed to decode the body", slog.Any("error", err))
+			writeResponse(http.StatusBadRequest, resp)
 			return
 		}
 		if payload.Message == "" {
-			w.WriteHeader(http.StatusUnprocessableEntity)
 			resp.Error = "'message' field is required"
+			writeResponse(http.StatusUnprocessableEntity, resp)
 			logger.Info("No message field was provided")
 			return
 		}
 		if err := botInstance.SendMessage(logger, payload.Message, payload.ParseMode); err != nil {
+			code := http.StatusInternalServerError
 			if errors.Is(err, tgnotifier.ErrBot) {
-				w.WriteHeader(http.StatusBadRequest)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
+				code = http.StatusBadRequest
 			}
 			resp.Error = err.Error()
+			writeResponse(code, resp)
 			return
 		}
 		resp.Success = true
+		writeResponse(200, resp)
 	}
 }

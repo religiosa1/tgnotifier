@@ -8,12 +8,16 @@ import (
 )
 
 type Config struct {
-	Env        string   `yaml:"env" env:"ENV" env-default:"local"`
-	LogLevel   string   `yaml:"log_level" env:"BOT_LOG_LEVEL" env-default:"info"`
+	// logger environment: "local", "development", "production"
+	Env string `yaml:"env" env:"ENV" env-default:"local"`
+	// logger minimum level: "debug", "info", "warn", "error"
+	LogLevel string `yaml:"log_level" env:"BOT_LOG_LEVEL" env-default:"info"`
+	// your bot token as given by botfathers
 	BotToken   string   `yaml:"bot_token" env:"BOT_TOKEN" env-required:"true"`
 	Recepients []string `yaml:"recepients" env:"BOT_RECEPIENTS" env-required:"true"`
 	Address    string   `yaml:"address" env:"BOT_ADDR" env-default:"localhost:6000"`
-	ApiKey     string   `yaml:"api_key" env:"BOT_API_KEY" env-required:"true"`
+	// API key, passed in 'x-api-key' to authorize requests to the app
+	ApiKey string `yaml:"api_key" env:"BOT_API_KEY" env-required:"true"`
 }
 
 func MustLoad(configPath string) *Config {

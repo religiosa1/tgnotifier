@@ -12,11 +12,7 @@ func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
 		resp := models.ResponsePayload{}
 
 		return func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			logger, ok := ctx.Value(LogginContextLogger).(*slog.Logger)
-			if !ok {
-				logger = slog.Default()
-			}
+			logger := GetLogger(r.Context())
 
 			if isValid, requestKey := authorizeKey(key, r); !isValid {
 				w.Header().Set("Content-Type", "application/json")

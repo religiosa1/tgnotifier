@@ -11,8 +11,8 @@ import (
 
 type LogginContextKey string
 
-const LoggingContextRequestId = LogginContextKey("logging_context.request_id")
-const LogginContextLogger = LogginContextKey("logging_context.logger")
+const loggingContextRequestId = LogginContextKey("logging_context.request_id")
+const logginContextLogger = LogginContextKey("logging_context.logger")
 
 type LoggingContext struct {
 	Logger    *slog.Logger
@@ -25,8 +25,8 @@ func WithLogger(logger *slog.Logger) func(next http.HandlerFunc) http.HandlerFun
 			id := uuid.NewString()
 			newLogger := logger.With(slog.String("request_id", id))
 
-			ctx := context.WithValue(r.Context(), LoggingContextRequestId, id)
-			ctx = context.WithValue(ctx, LogginContextLogger, newLogger)
+			ctx := context.WithValue(r.Context(), loggingContextRequestId, id)
+			ctx = context.WithValue(ctx, logginContextLogger, newLogger)
 
 			newLogger.Info("Incoming request",
 				slog.String("method", r.Method),
@@ -36,12 +36,22 @@ func WithLogger(logger *slog.Logger) func(next http.HandlerFunc) http.HandlerFun
 			)
 			t1 := time.Now()
 			next(w, r.WithContext(ctx))
-			defer func() {
-				newLogger.Debug(
-					"request completed",
-					slog.String("duration", time.Since(t1).String()),
-				)
-			}()
+			newLogger.Debug(
+				"request completed",
+				slog.String("duration", time.Since(t1).String()),
+			)
 		}
 	}
+}
+
+func GetLogger(ctx context.Context) *slog.Logger {
+	logger, ok := ctx.Value(logginContextLogger).(*slog.Logger)
+	if !ok {
+		logger = slog.Default()
+	}
+	return logger
+}
+
+func GetRequestId(ctx context.Context) string {
+	return ctx.Value(loggingContextRequestId).(string)
 }
