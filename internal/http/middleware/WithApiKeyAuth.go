@@ -7,11 +7,11 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
-func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
+func WithApiKeyAuth(key string) Middleware {
+	return func(next http.Handler) http.Handler {
 		resp := models.ResponsePayload{}
 
-		return func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			logger := GetLogger(r.Context())
 
 			if isValid, requestKey := authorizeKey(key, r); !isValid {
@@ -27,8 +27,8 @@ func WithApiKeyAuth(key string) func(next http.HandlerFunc) http.HandlerFunc {
 				logger.Info("Invalid authorization key supplied", slog.String("key", key))
 				return
 			}
-			next(w, r)
-		}
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 

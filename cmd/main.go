@@ -56,7 +56,7 @@ func runServer(configPath string) {
 
 	botInfo, err := bot.GetMe(log)
 	if err != nil {
-		log.Error("Error accessing the telegram API with the provided bot token", err)
+		log.Error("Error accessing the telegram API with the provided bot token", slog.Any("error", err))
 		os.Exit(2)
 	}
 	log.Debug("Bot initialized", slog.Any("GetMeInfo", botInfo))
@@ -66,19 +66,15 @@ func runServer(configPath string) {
 
 	go func() {
 		mux := http.NewServeMux()
-		mux.HandleFunc("GET /", middleware.Pipe(
-			handlers.Healthcheck(bot),
-			middleware.WithApiKeyAuth(cfg.ApiKey),
+		middlewares := middleware.Chain(
 			middleware.WithLogger(log),
-		))
-		mux.HandleFunc("POST /", middleware.Pipe(
-			handlers.Notify(bot),
 			middleware.WithApiKeyAuth(cfg.ApiKey),
-			middleware.WithLogger(log),
-		))
+		)
+		mux.Handle("GET /", middlewares(handlers.Healthcheck{Bot: bot}))
+		mux.Handle("POST /", middlewares(handlers.Notify{Bot: bot}))
 
 		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
-			log.Error("Error starting the server", err)
+			log.Error("Error starting the server", slog.Any("error", err))
 			os.Exit(1)
 		}
 	}()

@@ -19,9 +19,9 @@ type LoggingContext struct {
 	RequestId string
 }
 
-func WithLogger(logger *slog.Logger) func(next http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func WithLogger(logger *slog.Logger) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := uuid.NewString()
 			newLogger := logger.With(slog.String("request_id", id))
 
@@ -35,12 +35,12 @@ func WithLogger(logger *slog.Logger) func(next http.HandlerFunc) http.HandlerFun
 				slog.String("user_agent", r.UserAgent()),
 			)
 			t1 := time.Now()
-			next(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
 			newLogger.Debug(
 				"request completed",
 				slog.String("duration", time.Since(t1).String()),
 			)
-		}
+		})
 	}
 }
 
