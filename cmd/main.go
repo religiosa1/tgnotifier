@@ -23,7 +23,7 @@ import (
 var defaultConfigPath = "config.yml"
 
 type CommonCliArgs struct {
-	Config string `env:"BOT_CONFIG_PATH" default:"can" help:"Configuration file name" type:"path"`
+	Config string `short:"c" env:"BOT_CONFIG_PATH" help:"Configuration file name" type:"path"`
 }
 
 func (c *CommonCliArgs) BeforeApply(ctx *kong.Context) error {
@@ -35,16 +35,16 @@ func (c *CommonCliArgs) BeforeApply(ctx *kong.Context) error {
 
 type SendCmd struct {
 	CommonCliArgs
-	Message string `arg:"" optional:"" help:"Message to send"`
-	// TODO short flags
-	ParseMode  string   `enum:"MarkdownV2,HTML,Markdown" default:"MarkdownV2" help:"Message parse mode"`
-	Recipients []string `help:"Message recipients (defaults to value from config or env)"`
-	BotToken   string   `help:"your bot token as given by botfather (defaults to value from config or env)"`
+	Message    string   `arg:"" optional:"" help:"Message to send. Read from STDIN if not specified"`
+	ParseMode  string   `short:"m" enum:"MarkdownV2,HTML,Markdown" default:"MarkdownV2" help:"Message parse mode"`
+	Recipients []string `short:"r" help:"Message recipients, comma separated (defaults to value from config or env)"`
+	BotToken   string   `help:"Your bot token as given by botfather (defaults to value from config or env)"`
 }
 
-func (c *SendCmd) BeforeApply(ctx *kong.Context) error {
+func (c *SendCmd) AfterApply(ctx *kong.Context) error {
 	if c.Message == "" {
-		r := io.LimitReader(os.Stdin, int64(tgnotifier.MaxMsgLen))
+		// limiting to one extra bite from the allowed max, so we can error out from tgnotifier
+		r := io.LimitReader(os.Stdin, int64(tgnotifier.MaxMsgLen+1))
 		input, err := io.ReadAll(r)
 		if err != nil {
 			return fmt.Errorf("failed to read from stdin: %w", err)
@@ -68,7 +68,7 @@ func main() {
 	case "generate-key":
 		generateApiKey()
 		return
-	case "send":
+	case "send", "send <message>":
 		send()
 	case "serve":
 		runServer(CLI.Serve.Config)
@@ -88,23 +88,26 @@ func send() {
 			CLI.Send.Recipients = cfg.Recipients
 		}
 	}
-	if CLI.Send.BotToken == "" {
-		log.Fatalf("Bot token must be provided, through CLI flags, config or env variable")
-	}
 	if len(CLI.Send.Recipients) == 0 {
-		log.Fatalf("Recipeints list must be provided, through CLI flags, config or env variable")
+		fmt.Fprintf(os.Stderr, "Recipeints list must be provided, through CLI flags, config or env variable")
+		os.Exit(1)
 	}
-	bot := tgnotifier.New(cfg.BotToken)
-
+	bot, err := tgnotifier.New(cfg.BotToken)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing the bot: %s", err)
+		os.Exit(2)
+	}
 	if err := bot.SendMessage(CLI.Send.Message, CLI.Send.ParseMode, CLI.Send.Recipients); err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "Error sending the message: %s", err)
+		os.Exit(3)
 	}
 }
 
 func generateApiKey() {
 	key := make([]byte, 30)
 	if _, err := rand.Read(key); err != nil {
-		log.Fatal("Error while generating a random key", err)
+		fmt.Fprintf(os.Stderr, "Error while generating a random key: %s\n", err)
+		os.Exit(1)
 	}
 	fmt.Println(strings.ToUpper(hex.EncodeToString(key)))
 }
@@ -112,15 +115,19 @@ func generateApiKey() {
 func runServer(configPath string) {
 	cfg := config.MustLoad(configPath)
 
-	log := setupLogger(cfg.Env, cfg.LogLevel)
-	bot := tgnotifier.New(cfg.BotToken)
+	logger := setupLogger(cfg.Env, cfg.LogLevel)
+	bot, err := tgnotifier.New(cfg.BotToken)
+	if err != nil {
+		logger.Error("Error creating a bot", slog.Any("error", err))
+		os.Exit(1)
+	}
 
 	botInfo, err := bot.GetMe()
 	if err != nil {
-		log.Error("Error accessing the telegram API with the provided bot token", slog.Any("error", err))
+		logger.Error("Error accessing the telegram API with the provided bot token", slog.Any("error", err))
 		os.Exit(2)
 	}
-	log.Debug("Bot initialized", slog.Any("GetMeInfo", botInfo))
+	logger.Debug("Bot initialized", slog.Any("GetMeInfo", botInfo))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -128,21 +135,21 @@ func runServer(configPath string) {
 	go func() {
 		mux := http.NewServeMux()
 		middlewares := middleware.Chain(
-			middleware.WithLogger(log),
+			middleware.WithLogger(logger),
 			middleware.WithApiKeyAuth(cfg.ApiKey),
 		)
 		mux.Handle("GET /", middlewares(handlers.Healthcheck{Bot: bot}))
 		mux.Handle("POST /", middlewares(handlers.Notify{Bot: bot, Recipients: cfg.Recipients}))
 
 		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
-			log.Error("Error starting the server", slog.Any("error", err))
-			os.Exit(1)
+			logger.Error("Error starting the server", slog.Any("error", err))
+			os.Exit(3)
 		}
 	}()
-	log.Info("Running bot http server", slog.String("address", cfg.Address), slog.Any("recipients", cfg.Recipients))
+	logger.Info("Running bot http server", slog.String("address", cfg.Address), slog.Any("recipients", cfg.Recipients))
 
 	<-done
-	log.Info("Server closed")
+	logger.Info("Server closed")
 }
 
 func setupLogger(env string, logLevel string) *slog.Logger {

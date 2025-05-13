@@ -12,12 +12,13 @@ import (
 	"time"
 )
 
-// Absolute maximum length of message body in bytes.
-// Please notice, that TG applies 4096 **character** limit, 9500 is the limit
-// for body length for formatting. So you still can get a Entities_too_long error
-// on a message body shorter than this value, if the amount of characcters is more
-// than 4096
-// https://stackoverflow.com/questions/68768069/telegram-error-badrequest-entities-too-long-error-when-trying-to-send-long-ma
+// MaxMsgLen is the maximum allowed message body length in bytes.
+//
+// Note: Telegram limits messages to 4096 characters, but this value accounts for
+// formatting and encoded entities. You may still receive an "entities too long"
+// error if the message exceeds 4096 characters even though it's under MaxMsgLen.
+//
+// See: https://stackoverflow.com/questions/68768069/telegram-error-badrequest-entities-too-long-error-when-trying-to-send-long-ma
 const MaxMsgLen int = 9500
 
 type ParseMode = string
@@ -28,6 +29,7 @@ const (
 	ParseModeMDLegacy ParseMode = "Markdown"
 )
 
+// IsValidParseMode reports whether the given parse mode is valid.
 func IsValidParseMode(parseMode string) bool {
 	switch parseMode {
 	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy:
@@ -38,13 +40,15 @@ func IsValidParseMode(parseMode string) bool {
 }
 
 var (
-	ErrEmptyRecipients      = errors.New("empty recipients list")
-	ErrInvalidMessageLength = errors.New("invalid message length")
-	ErrInvalidParseMode     = errors.New("invalid parseMode value")
-	ErrNotABot              = errors.New("we're not a bot according to getMe")
+	ErrTokenEmpty       = errors.New("empty TG bot token")
+	ErrRecipientsEmpty  = errors.New("empty recipients list")
+	ErrMessageEmpty     = errors.New("tg message is empty")
+	ErrMessageTooLong   = errors.New("tg message length exceeds maximum")
+	ErrParseModeInvalid = errors.New("invalid parseMode value")
+	ErrNotABot          = errors.New("we're not a bot according to getMe")
 )
 
-// Error responses returned from Telegram API
+// TgApiError represents an error returned by the Telegram Bot API.
 type TgApiError struct {
 	TgCode      int
 	Method      string
@@ -55,40 +59,58 @@ func (e TgApiError) Error() string {
 	return fmt.Sprintf("error during the TG API call to '%s' (%d): %s", e.Method, e.TgCode, e.Description)
 }
 
+// DefaultTimeout is the timeout duration for the default Bot http client
+// (the one created with [New], not [NewWithClient])
 const DefaultTimeout time.Duration = 30 * time.Second
 
+// Bot is a Telegram notification bot.
 type Bot struct {
 	token      string
 	httpClient *http.Client
 }
 
-func New(token string) *Bot {
+// New wraps [NewWithClient] using the default http.Client with Timeout: [DefaultTimeout]
+func New(token string) (*Bot, error) {
 	return NewWithClient(token, &http.Client{Timeout: DefaultTimeout})
 }
 
-func NewWithClient(token string, client *http.Client) *Bot {
-	return &Bot{token, client}
+// NewWithClient creates a new instance of Bot with the provided
+// BOT API token and http client instance
+func NewWithClient(token string, client *http.Client) (*Bot, error) {
+	if token == "" {
+		return nil, ErrTokenEmpty
+	}
+	return &Bot{token, client}, nil
 }
 
 //==============================================================================
 
+// SendMessage wraps [SendMessageWithContext] using context.Background.
 func (bot *Bot) SendMessage(message string, parseMode ParseMode, recipients []string) error {
 	return bot.SendMessageWithContext(context.Background(), message, parseMode, recipients)
 }
+
+// SendMessage sends TG message in a given parseMode to one or more recipients
+//
+// See: https://core.telegram.org/bots/api#sendmessage
 func (bot *Bot) SendMessageWithContext(
 	ctx context.Context,
 	message string,
 	parseMode ParseMode,
 	recipients []string,
 ) error {
-	if l := len(message); l < 1 || l >= MaxMsgLen {
-		return ErrInvalidMessageLength
+	l := len(message)
+	if l > MaxMsgLen {
+		return ErrMessageTooLong
+	}
+	if l <= 0 {
+		return ErrMessageEmpty
 	}
 	if parseMode != "" && !IsValidParseMode(parseMode) {
-		return ErrInvalidParseMode
+		return ErrParseModeInvalid
 	}
 	if len(recipients) == 0 {
-		return ErrEmptyRecipients
+		return ErrRecipientsEmpty
 	}
 
 	if ctx.Err() != nil {
@@ -110,7 +132,7 @@ func (bot *Bot) SendMessageWithContext(
 			default:
 			}
 
-			payload := SendMessagePayload{
+			payload := sendMessagePayload{
 				ChatId:    chatId,
 				Text:      message,
 				ParseMode: parseMode,
@@ -130,24 +152,21 @@ func (bot *Bot) SendMessageWithContext(
 	return errors.Join(errs...)
 }
 
-type BotResponse[T any] struct {
+type botResponse[T any] struct {
 	Ok          bool   `json:"ok"`
 	ErrorCode   int    `json:"error_code,omitempty"`
 	Description string `json:"description,omitempty"`
 	Result      T      `json:"result,omitempty"`
 }
 
-// @see https://core.telegram.org/bots/api#sendmessage
-type SendMessagePayload struct {
-	// Unique identifier for the target chat or username of the target channel
-	ChatId string `json:"chat_id"`
-	// Text of the message to be sent, 1-4096 characters after entities parsing
-	Text string `json:"text"`
-	// Mode for parsing entities in the message text
+// https://core.telegram.org/bots/api#sendmessage
+type sendMessagePayload struct {
+	ChatId    string `json:"chat_id"`
+	Text      string `json:"text"`
 	ParseMode string `json:"parse_mode,omitempty"`
 }
 
-func (bot *Bot) sendMessage(ctx context.Context, payload SendMessagePayload) error {
+func (bot *Bot) sendMessage(ctx context.Context, payload sendMessagePayload) error {
 	const method string = "sendMessage"
 	endpointUrl := bot.methodUrl(method)
 	body, err := json.Marshal(payload)
@@ -168,7 +187,7 @@ func (bot *Bot) sendMessage(ctx context.Context, payload SendMessagePayload) err
 	}
 	defer resp.Body.Close()
 
-	var sendMessageResponse BotResponse[struct{}]
+	var sendMessageResponse botResponse[struct{}]
 	if err := json.NewDecoder(resp.Body).Decode(&sendMessageResponse); err != nil {
 		return fmt.Errorf("error reading response body: %w", err)
 	}
@@ -181,12 +200,15 @@ func (bot *Bot) sendMessage(ctx context.Context, payload SendMessagePayload) err
 
 //==============================================================================
 
-// @see https://core.telegram.org/bots/api#user
+// GetMeResponse represents response payload of TG getMe endpoint -- the bot user.
+//
+// See: https://core.telegram.org/bots/api#user
 type GetMeResponse struct {
 	Id        int64  `json:"id"`
 	IsBot     bool   `json:"is_bot"`
 	FirstName string `json:"first_name"`
 	// optionals:
+
 	LastName                string `json:"last_name,omitempty"`
 	Username                string `json:"username,omitempty"`
 	LanguageCode            string `json:"language_code,omitempty"`
@@ -195,12 +217,18 @@ type GetMeResponse struct {
 	CanJoinGroups           bool   `json:"can_join_groups,omitempty"`
 	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages,omitempty"`
 	SupportsInlineQueries   bool   `json:"supports_inline_queries,omitempty"`
+	CanConnectToBusiness    bool   `json:"can_connect_to_business,omitempty"`
+	HasMainWebApp           bool   `json:"has_main_web_app,omitempty"`
 }
 
+// GetMe wraps [GetMeWithContext] using context.Background.
 func (bot *Bot) GetMe() (*GetMeResponse, error) {
 	return bot.GetMeWithContext(context.Background())
 }
 
+// GetMeWithContext calls `getMe` telegram endpoint for testing token and returns its response
+//
+// See: https://core.telegram.org/bots/api#getme
 func (bot *Bot) GetMeWithContext(ctx context.Context) (*GetMeResponse, error) {
 	const method string = "getMe"
 	endpointUrl := bot.methodUrl(method)
@@ -215,7 +243,7 @@ func (bot *Bot) GetMeWithContext(ctx context.Context) (*GetMeResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	var getMeResp BotResponse[GetMeResponse]
+	var getMeResp botResponse[GetMeResponse]
 	if err := json.NewDecoder(resp.Body).Decode(&getMeResp); err != nil {
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}

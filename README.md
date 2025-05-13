@@ -21,7 +21,10 @@ go get github.com/religiosa1/tgnotifier@latest
 import "github.com/religiosa1/tgnotifier@latest"
 
 func main() {
-  bot := tgnotifier.New("YOUR_BOT_TOKEN_FROM_BOTFATHER")
+  bot, err := tgnotifier.New("YOUR_BOT_TOKEN_FROM_BOTFATHER")
+  if err != nil {
+    log.Fatal(err)
+  }
   recipientsList := []string {"recipientTgId"}
   err := bot.SendMessage("Hello world!", recipientsList)
   if err != nil {
@@ -122,6 +125,12 @@ go build -o tgnotifier.exe .\cmd\main.go
 ```
 
 Refer to the go docs on crosscompilation and stuff.
+
+You can use ldflags, to override the default config file location:
+
+```sh
+go build -o tgnotifier -ldflags="-X 'main.defaultConfigPath=/etc/tgnotifier.yml'" ./cmd/main.go
+```
 
 ## Initial app setup
 
