@@ -13,12 +13,13 @@ import (
 )
 
 type RequestPayload struct {
-	Message   string `json:"message"`
-	ParseMode string `json:"parse_mode"`
+	Message   string               `json:"message"`
+	ParseMode tgnotifier.ParseMode `json:"parse_mode"`
 }
 
 type Notify struct {
-	Bot *tgnotifier.Bot
+	Bot        *tgnotifier.Bot
+	Recipients []string
 }
 
 func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -53,9 +54,9 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		logger.Info("No message field was provided")
 		return
 	}
-	if err := h.Bot.SendMessage(logger, payload.Message, payload.ParseMode); err != nil {
+	if err := h.Bot.SendMessageWithContext(r.Context(), payload.Message, payload.ParseMode, h.Recipients); err != nil {
 		code := http.StatusInternalServerError
-		if errors.Is(err, tgnotifier.ErrBot) {
+		if errors.Is(err, tgnotifier.TgApiError{}) {
 			code = http.StatusBadRequest
 		}
 		resp.Error = err.Error()

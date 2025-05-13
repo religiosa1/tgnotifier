@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 type LogginContextKey string
@@ -22,7 +22,7 @@ type LoggingContext struct {
 func WithLogger(logger *slog.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id := uuid.NewString()
+			id := ulid.Make().String()
 			newLogger := logger.With(slog.String("request_id", id))
 
 			ctx := context.WithValue(r.Context(), loggingContextRequestId, id)

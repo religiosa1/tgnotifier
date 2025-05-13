@@ -3,8 +3,9 @@ module github.com/religiosa1/tgnotifier
 go 1.22.0
 
 require (
-	github.com/google/uuid v1.6.0
+	github.com/alecthomas/kong v1.10.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
+	github.com/oklog/ulid/v2 v2.1.0
 )
 
 require (

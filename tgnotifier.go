@@ -2,23 +2,132 @@ package tgnotifier
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 )
+
+// Absolute maximum length of message body in bytes.
+// Please notice, that TG applies 4096 **character** limit, 9500 is the limit
+// for body length for formatting. So you still can get a Entities_too_long error
+// on a message body shorter than this value, if the amount of characcters is more
+// than 4096
+// https://stackoverflow.com/questions/68768069/telegram-error-badrequest-entities-too-long-error-when-trying-to-send-long-ma
+const MaxMsgLen int = 9500
+
+type ParseMode = string
+
+const (
+	ParseModeMD       ParseMode = "MarkdownV2"
+	ParseModeHTML     ParseMode = "HTML"
+	ParseModeMDLegacy ParseMode = "Markdown"
+)
+
+func IsValidParseMode(parseMode string) bool {
+	switch parseMode {
+	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy:
+		return true
+	default:
+		return false
+	}
+}
+
+var (
+	ErrEmptyRecipients      = errors.New("empty recipients list")
+	ErrInvalidMessageLength = errors.New("invalid message length")
+	ErrInvalidParseMode     = errors.New("invalid parseMode value")
+	ErrNotABot              = errors.New("we're not a bot according to getMe")
+)
+
+// Error responses returned from Telegram API
+type TgApiError struct {
+	TgCode      int
+	Method      string
+	Description string
+}
+
+func (e TgApiError) Error() string {
+	return fmt.Sprintf("error during the TG API call to '%s' (%d): %s", e.Method, e.TgCode, e.Description)
+}
+
+const DefaultTimeout time.Duration = 30 * time.Second
 
 type Bot struct {
 	token      string
-	Recepients []string
 	httpClient *http.Client
 }
 
-func New(token string, recepients []string) *Bot {
-	return &Bot{token, recepients, &http.Client{}}
+func New(token string) *Bot {
+	return NewWithClient(token, &http.Client{Timeout: DefaultTimeout})
+}
+
+func NewWithClient(token string, client *http.Client) *Bot {
+	return &Bot{token, client}
+}
+
+//==============================================================================
+
+func (bot *Bot) SendMessage(message string, parseMode ParseMode, recipients []string) error {
+	return bot.SendMessageWithContext(context.Background(), message, parseMode, recipients)
+}
+func (bot *Bot) SendMessageWithContext(
+	ctx context.Context,
+	message string,
+	parseMode ParseMode,
+	recipients []string,
+) error {
+	if l := len(message); l < 1 || l >= MaxMsgLen {
+		return ErrInvalidMessageLength
+	}
+	if parseMode != "" && !IsValidParseMode(parseMode) {
+		return ErrInvalidParseMode
+	}
+	if len(recipients) == 0 {
+		return ErrEmptyRecipients
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	errCh := make(chan error, len(recipients))
+	var wg sync.WaitGroup
+	wg.Add(len(recipients))
+
+	for _, chatId := range recipients {
+		go func(chatId string) {
+			defer wg.Done()
+
+			select {
+			case <-ctx.Done():
+				errCh <- ctx.Err()
+				return
+			default:
+			}
+
+			payload := SendMessagePayload{
+				ChatId:    chatId,
+				Text:      message,
+				ParseMode: parseMode,
+			}
+			if err := bot.sendMessage(ctx, payload); err != nil {
+				errCh <- err
+			}
+		}(chatId)
+	}
+	wg.Wait()
+	close(errCh)
+
+	var errs []error
+	for err := range errCh {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
 
 type BotResponse[T any] struct {
@@ -38,162 +147,85 @@ type SendMessagePayload struct {
 	ParseMode string `json:"parse_mode,omitempty"`
 }
 
-const (
-	ParseModeMD       = "MarkdownV2"
-	ParseModeHTML     = "HTML"
-	ParseModeMDLegacy = "Markdown"
-)
-
-var ErrBot = errors.New("bot error")
-
-type botError struct {
-	message string
-}
-
-func (e botError) Error() string {
-	return e.message
-}
-func (e botError) Is(target error) bool { return target == ErrBot }
-
-func (bot *Bot) SendMessage(logger *slog.Logger, message string, parseMode string) error {
-	if l := len(message); l < 1 || l > 4096 {
-		return botError{"invalid message length"}
-	}
-	if err := validateParseMode(parseMode); err != nil {
-		return err
-	}
-	if len(bot.Recepients) == 0 {
-		logger.Info("Empty recepients  list during SendMessage call, exiting")
-		return nil
-	}
-	errCh := make(chan error, len(bot.Recepients))
-	var wg sync.WaitGroup
-	wg.Add(len(bot.Recepients))
-	for i := 0; i < len(bot.Recepients); i++ {
-		chatId := bot.Recepients[0]
-		logger := logger.With(slog.String("chat_id", chatId))
-		go func() {
-			err := bot.sendMessage(logger, message, chatId)
-			if err != nil {
-				errCh <- err
-			}
-			wg.Done()
-		}()
-	}
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
-
-	var errs []error
-	for err := range errCh {
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errors.Join(errs...)
-}
-
-func (bot *Bot) sendMessage(logger *slog.Logger, message string, chatId string) error {
-	logger.Debug("Sending the notification")
-	endpointUrl := bot.methodUrl("sendMessage")
-	body, err := json.Marshal(SendMessagePayload{
-		ChatId:    chatId,
-		Text:      message,
-		ParseMode: ParseModeMD,
-	})
+func (bot *Bot) sendMessage(ctx context.Context, payload SendMessagePayload) error {
+	const method string = "sendMessage"
+	endpointUrl := bot.methodUrl(method)
+	body, err := json.Marshal(payload)
 	if err != nil {
-		logger.Error("Error encoding the sendMessage body", slog.Any("error", err))
-		return err
+		return fmt.Errorf("error encoding the sendMessage body: %w", err)
 	}
 	bodyReader := bytes.NewReader(body)
 
-	req, err := http.NewRequest("POST", endpointUrl, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, "POST", endpointUrl, bodyReader)
 	if err != nil {
-		logger.Error("Error creating request:", slog.Any("error", err))
-		return err
+		return fmt.Errorf("error creating request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := bot.httpClient.Do(req)
 	if err != nil {
-		logger.Error("Error sending request:", slog.Any("error", err))
-		return err
+		return fmt.Errorf("error sending request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var sendMessageResponse BotResponse[struct{}]
 	if err := json.NewDecoder(resp.Body).Decode(&sendMessageResponse); err != nil {
-		logger.Error("Error reading response body:", slog.Any("error", err))
-		return err
+		return fmt.Errorf("error reading response body: %w", err)
 	}
 
 	if !sendMessageResponse.Ok {
-		logger.Error("Failed to call the API method", slog.Int("StatusCode", resp.StatusCode), slog.String("description", sendMessageResponse.Description))
-		return botError{sendMessageResponse.Description}
+		return TgApiError{sendMessageResponse.ErrorCode, method, sendMessageResponse.Description}
 	}
-	logger.Debug("Sent the notification", slog.Int("StatusCode", resp.StatusCode))
 	return nil
-}
-
-func validateParseMode(parseMode string) error {
-	switch parseMode {
-	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy, "":
-		return nil
-	default:
-		return botError{"invalid parseMode value"}
-	}
 }
 
 //==============================================================================
 
 // @see https://core.telegram.org/bots/api#user
 type GetMeResponse struct {
-	Id       int64  `json:"id"`
-	IsBot    bool   `json:"is_bot"`
-	FirsName string `json:"first_name"`
+	Id        int64  `json:"id"`
+	IsBot     bool   `json:"is_bot"`
+	FirstName string `json:"first_name"`
 	// optionals:
 	LastName                string `json:"last_name,omitempty"`
 	Username                string `json:"username,omitempty"`
 	LanguageCode            string `json:"language_code,omitempty"`
 	IsPremium               bool   `json:"is_premium,omitempty"`
 	AddedToAttachmentMenu   bool   `json:"added_to_attachment_menu,omitempty"`
-	CanJoingGroups          bool   `json:"can_join_groups,omitempty"`
+	CanJoinGroups           bool   `json:"can_join_groups,omitempty"`
 	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages,omitempty"`
 	SupportsInlineQueries   bool   `json:"supports_inline_queries,omitempty"`
 }
 
-func (bot *Bot) GetMe(logger *slog.Logger) (*GetMeResponse, error) {
-	logger.Debug("getMe healthcheck request")
-	endpointUrl := bot.methodUrl("getMe")
-	req, err := http.NewRequest("GET", endpointUrl, nil)
+func (bot *Bot) GetMe() (*GetMeResponse, error) {
+	return bot.GetMeWithContext(context.Background())
+}
+
+func (bot *Bot) GetMeWithContext(ctx context.Context) (*GetMeResponse, error) {
+	const method string = "getMe"
+	endpointUrl := bot.methodUrl(method)
+	req, err := http.NewRequestWithContext(ctx, "GET", endpointUrl, nil)
 	if err != nil {
-		logger.Error("Error creating request:", slog.Any("error", err))
-		return nil, err
+		return nil, fmt.Errorf("error creating bot request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := bot.httpClient.Do(req)
 	if err != nil {
-		logger.Error("Error sending request:", slog.Any("error", err))
-		return nil, err
+		return nil, fmt.Errorf("error sending bot request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var getMeInfo BotResponse[GetMeResponse]
-	if err := json.NewDecoder(resp.Body).Decode(&getMeInfo); err != nil {
-		logger.Error("Error reading response body:", slog.Any("error", err))
-		return nil, err
+	var getMeResp BotResponse[GetMeResponse]
+	if err := json.NewDecoder(resp.Body).Decode(&getMeResp); err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
-	if !getMeInfo.Ok {
-		logger.Error("Failed to call getMe method", slog.Int("StatusCode", resp.StatusCode), slog.String("description", getMeInfo.Description))
-		return nil, botError{getMeInfo.Description}
+	if !getMeResp.Ok {
+		return nil, TgApiError{getMeResp.ErrorCode, method, getMeResp.Description}
 	}
-	if !getMeInfo.Result.IsBot {
-		logger.Error("Unexpected response from getMe request, we're supposed to be a bot:", slog.Any("GetMeInfo", getMeInfo))
-		return nil, botError{"unexpected response from getMe request - not a bot"}
+	if !getMeResp.Result.IsBot {
+		return nil, ErrNotABot
 	}
-	return &getMeInfo.Result, nil
+	return &getMeResp.Result, nil
 }
 
 //==============================================================================

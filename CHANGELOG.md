@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added 
+- cli: new `send` subcommand to send Telegram messages directly from the command
+    line (e.g. for use in cron jobs)
+- lib: each bot method now has a `WithContext` variant to support cancellation via context
+### Changed
+- fix spelling across the project "recepient" -> "recipient"
+- lib: `SendMessage` now takes the recipient list as an argument 
+    instead of being tied to the bot instance to the bot instance
+- lib: `tgnotifier` no longer accepts a `slog` logger; instead,
+    there's a collection of sentinel errors in the package for granularity
+- lib: `GetMeResponse` struct fields names typo fix: 
+    `FistName` -> `FirstName`, `CanJoingGroups` -> `CanJoinGroups`
+- cli: CLI parsing has been reworked. The `-generate-key` flag is now 
+    a `generate-key` subcommand (no dash)
+- service: response `request_id` is now returned as a ULID instead of a UUID
+
 ## [1.0.0] - 2024.02.26
 ### Changed
 - module renamed to tgnofier, to adhere to golang naming conventions

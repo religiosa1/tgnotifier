@@ -7,5 +7,5 @@ bot_token: "blah-blah"
 # API key, passed in 'x-api-key' to authorize your requests. Can be generated with generate-key subcommand
 api_key: 074E9FCF2108048D677E34310D07A3814F2D7FBBD996B2383017BDBC23C6
 log_level: info # possible values are 'debug', 'info', 'warn', and 'error'
-recepients:
-  - "recepient tgId (you can use @userinfobot to find it out)"
+recipients:
+  - "recipient tgId (you can use @userinfobot to find it out)"
