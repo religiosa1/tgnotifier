@@ -35,13 +35,28 @@ func WithLogger(logger *slog.Logger) Middleware {
 				slog.String("user_agent", r.UserAgent()),
 			)
 			t1 := time.Now()
-			next.ServeHTTP(w, r.WithContext(ctx))
-			newLogger.Debug(
+			rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+			w.Header().Set("X-Request-Id", id)
+
+			next.ServeHTTP(rw, r.WithContext(ctx))
+			newLogger.Info(
 				"request completed",
 				slog.String("duration", time.Since(t1).String()),
+				slog.Int("status_code", rw.status),
 			)
 		})
 	}
+}
+
+// Wrapper around the response writer, to capture the response code
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func GetLogger(ctx context.Context) *slog.Logger {

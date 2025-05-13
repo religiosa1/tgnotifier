@@ -1,13 +1,12 @@
 # Simple telegram notification service
 
 Allows you to send [telegram](https://telegram.org/) text messages to a small 
-list of predefined users through a REST API.
+list of predefined users through a CLI, a REST API or as golang library.
 
 It can be used to send notifications about pipeline errors/completions, 
 some long running process finished, etc.
 
 It's intended to be simple to deploy and use, without much configuration.
-
 
 ## Usage
 
@@ -156,11 +155,11 @@ Please, check the [config file](./config.yml) included in this repo, to see the
 available configuration values.
 
 Supported enviromental variables are:
-- ENV controls the loggger output, possible values are "local", "development", "production"
 - BOT_TOKEN bot token as provided by BotFather
 - BOT_RECIPIENTS list of recipients' telegram Ids, separated by comma
 - BOT_API_KEY your API Key (see bellow)
 - BOT_LOG_LEVEL verbosity level of logs, possible values are 'debug', 'info', 'warn', and 'error'
+- BOT_LOG_TYPE controls the loggger output, possible values are "text" and "json"
 - BOT_ADDR address on which we're launching the http server, defaults to "localhost:6000"`
 - BOT_CONFIG_PATH path to configuration file
 
