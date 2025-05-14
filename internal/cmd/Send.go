@@ -7,30 +7,37 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/religiosa1/tgnotifier"
+	"github.com/religiosa1/tgnotifier/internal/config"
 )
 
 type Send struct {
-	CommonBotCliArgs
-	ParseMode string `short:"m" enum:"MarkdownV2,HTML,Markdown" default:"MarkdownV2" help:"Message parse mode"`
-	Message   string `arg:"" optional:"" help:"Message to send. Read from STDIN if not specified"`
+	CommonBotCliArgs `embed:""`
+	ParseMode        string `short:"m" placeholder:"MarkdownV2" help:"Message parse mode"`
+	Message          string `arg:"" optional:"" help:"Message to send. Read from STDIN if not specified"`
 }
 
-func (c *Send) AfterApply(ctx *kong.Context) error {
-	if c.Message == "" {
+func (cmd *Send) AfterApply(ctx *kong.Context) error {
+	if cmd.Message == "" {
 		// limiting to one extra bite from the allowed max, so we can error out from tgnotifier
 		r := io.LimitReader(os.Stdin, int64(tgnotifier.MaxMsgLen+1))
 		input, err := io.ReadAll(r)
 		if err != nil {
 			return fmt.Errorf("failed to read from stdin: %w", err)
 		}
-		c.Message = string(input)
+		cmd.Message = string(input)
 	}
 	return nil
 }
 
 func (cmd *Send) Run() error {
-	if len(cmd.Recipients) == 0 {
-		return fmt.Errorf("recipeints list must be provided, through CLI flags, config or env variable")
+	cfg, err := config.Load(cmd.Config)
+	if err != nil {
+		return err
+	}
+	cmd.CommonBotCliArgs.MergeConfig(cfg)
+	// we're not validating the Send struct, only common args, allowing bot to error out
+	if err := cmd.CommonBotCliArgs.ValidatePostMerge(); err != nil {
+		return err
 	}
 	bot, err := tgnotifier.New(cmd.BotToken)
 	if err != nil {

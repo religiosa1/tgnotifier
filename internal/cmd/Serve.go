@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"log"
 	"log/slog"
 	"net/http"
@@ -9,20 +10,64 @@ import (
 	"syscall"
 
 	"github.com/religiosa1/tgnotifier"
+	"github.com/religiosa1/tgnotifier/internal/config"
 	"github.com/religiosa1/tgnotifier/internal/http/handlers"
 	"github.com/religiosa1/tgnotifier/internal/http/middleware"
 )
 
+// We can't use enums, default values, etc. unless we implement a custom resolver
+// in cong, to apply config. And we can't do that either, until this issue is resolved
+// as we need to know if config was set explicitely: https://github.com/alecthomas/kong/issues/365
+
 type Serve struct {
-	CommonBotCliArgs
-	LogType  string `env:"BOT_LOG_TYPE" yaml:"log_type" enum:"text,json" default:"text" help:"Logger output type"`
-	LogLevel string `env:"BOT_LOG_LEVEL" yaml:"log_level" default:"info" help:"Minimum logging level"`
-	Address  string `arg:"" optional:"" env:"BOT_ADDR" yaml:"address" default:"localhost:6000" help:"HTTP server listening address"`
-	ApiKey   string `env:"BOT_API_KEY" yaml:"api_key" help:"API key, passed in 'x-api-key' header to authorize incoming requests"`
+	CommonBotCliArgs `embed:""`
+	LogType          string `placeholder:"text" help:"Logger output type ($BOT_LOG_TYPE)"`
+	LogLevel         string `placeholder:"info" help:"Minimum logging level ($BOT_LOG_LEVEL)"`
+	Address          string `arg:"" optional:"" env:"BOT_ADDR" default:"localhost:6000" help:"HTTP server listening address ($BOT_ADDR)"`
+	ApiKey           string `help:"API key, passed in 'x-api-key' header to authorize incoming requests ($BOT_API_KEY)"`
+}
+
+func (cmd *Serve) MergeConfig(cfg config.Config) {
+	cmd.CommonBotCliArgs.MergeConfig(cfg)
+	MergeValueInto(&cmd.LogType, cfg.LogType)
+	MergeValueInto(&cmd.LogLevel, cfg.LogLevel)
+	MergeValueInto(&cmd.Address, cfg.Address)
+	MergeValueInto(&cmd.ApiKey, cfg.ApiKey)
+}
+func MergeValueInto[T comparable](target *T, source T) {
+	var zero T
+	if *target == zero {
+		*target = source
+	}
+}
+
+func (cmd *Serve) ValidatePostMerge() error {
+	if err := cmd.CommonBotCliArgs.ValidatePostMerge(); err != nil {
+		return err
+	}
+	switch cmd.LogType {
+	case "text", "json":
+	default:
+		return errors.New(`incorrect value for log type, only "text" and "json" are supported`)
+	}
+	if len(cmd.Recipients) == 0 {
+		return errors.New("recipients list must be provided through the CLI, config or environment variable")
+	}
+	return nil
 }
 
 func (cmd *Serve) Run() error {
-	logger := setupLogger(cmd.LogLevel, cmd.LogLevel)
+	cfg, err := config.Load(cmd.Config)
+	if err != nil {
+		return err
+	}
+	cmd.MergeConfig(cfg)
+	err = cmd.ValidatePostMerge()
+	if err != nil {
+		return err
+	}
+
+	logger := setupLogger(cmd.LogType, cmd.LogLevel)
 	bot, err := tgnotifier.New(cmd.BotToken)
 	if err != nil {
 		logger.Error("Error creating a bot", slog.Any("error", err))
@@ -71,7 +116,7 @@ func setupLogger(logType string, logLevel string) *slog.Logger {
 	case "json":
 		logger = slog.New((slog.NewJSONHandler(os.Stdout, hdlrOpts)))
 	default:
-		log.Fatalf("Unknown logger type %s", logLevel)
+		log.Fatalf("Unknown logger type %s", logType)
 	}
 	return logger
 }

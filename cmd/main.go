@@ -3,9 +3,8 @@ package main
 import (
 	"github.com/alecthomas/kong"
 	"github.com/religiosa1/tgnotifier/internal/cmd"
+	"github.com/religiosa1/tgnotifier/internal/config"
 )
-
-var defaultConfigPath = "config.yml"
 
 var CLI struct {
 	GenerateKey cmd.GenerateKey `cmd:"" help:"Generate a key for the app HTTP API"`
@@ -14,7 +13,10 @@ var CLI struct {
 }
 
 func main() {
-	ctx := kong.Parse(&CLI, kong.Vars{"config_file": defaultConfigPath})
+	ctx := kong.Parse(
+		&CLI,
+		kong.Vars{"default_config_path": config.DefaultConfigPath},
+	)
 	err := ctx.Run()
 	ctx.FatalIfErrorf(err)
 }
