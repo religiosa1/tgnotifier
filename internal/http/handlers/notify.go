@@ -18,17 +18,16 @@ type RequestPayload struct {
 }
 
 type Notify struct {
-	Bot        *tgnotifier.Bot
+	Bot        tgnotifier.BotInterface
 	Recipients []string
 }
 
 func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	logger := middleware.GetLogger(r.Context())
 
 	writeResponse := func(statusCode int, payload models.ResponsePayload) {
 		w.WriteHeader(statusCode)
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(payload); err != nil {
 			logger.Error("Error encoding response", slog.Any("error", err))
 		}
@@ -39,8 +38,9 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var payload RequestPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		if errors.Is(err, io.EOF) {
-			resp.Error = "{ message: string } body expected but none was supplied"
-			logger.Info("No body was supplied")
+			resp.Error = "no body was provided"
+			logger.Info("No body was provided")
+			writeResponse(http.StatusBadRequest, resp)
 			return
 		}
 		resp.Error = err.Error()
@@ -48,21 +48,26 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeResponse(http.StatusBadRequest, resp)
 		return
 	}
-	if payload.Message == "" {
-		resp.Error = "'message' field is required"
-		writeResponse(http.StatusUnprocessableEntity, resp)
-		logger.Info("No message field was provided")
-		return
-	}
 	if err := h.Bot.SendMessageWithContext(r.Context(), payload.Message, payload.ParseMode, h.Recipients); err != nil {
-		code := http.StatusInternalServerError
-		if errors.Is(err, tgnotifier.TgApiError{}) {
-			code = http.StatusBadRequest
-		}
+		logger.Error("Error sending the notification", slog.Any("error", err))
 		resp.Error = err.Error()
-		writeResponse(code, resp)
+		writeResponse(mapSendMessageErrorToHttpCode(err), resp)
 		return
 	}
 	resp.Success = true
-	writeResponse(200, resp)
+	writeResponse(http.StatusOK, resp)
+}
+
+func mapSendMessageErrorToHttpCode(err error) int {
+	var apiError tgnotifier.TgApiError
+	if errors.As(err, &apiError) {
+		return http.StatusBadRequest
+	}
+	if errors.Is(err, tgnotifier.ErrMessageTooLong) {
+		return http.StatusRequestEntityTooLarge
+	}
+	if errors.Is(err, tgnotifier.ErrMessageEmpty) || errors.Is(err, tgnotifier.ErrParseModeInvalid) {
+		return http.StatusUnprocessableEntity
+	}
+	return http.StatusInternalServerError
 }

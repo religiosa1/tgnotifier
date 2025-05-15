@@ -63,6 +63,13 @@ func (e TgApiError) Error() string {
 // (the one created with [New], not [NewWithClient])
 const DefaultTimeout time.Duration = 30 * time.Second
 
+type BotInterface interface {
+	SendMessage(message string, parseMode ParseMode, recipients []string) error
+	SendMessageWithContext(ctx context.Context, message string, parseMode ParseMode, recipients []string) error
+	GetMe() (GetMeResponse, error)
+	GetMeWithContext(ctx context.Context) (GetMeResponse, error)
+}
+
 // Bot is a Telegram notification bot.
 type Bot struct {
 	token      string
@@ -222,38 +229,39 @@ type GetMeResponse struct {
 }
 
 // GetMe wraps [GetMeWithContext] using context.Background.
-func (bot *Bot) GetMe() (*GetMeResponse, error) {
+func (bot *Bot) GetMe() (GetMeResponse, error) {
 	return bot.GetMeWithContext(context.Background())
 }
 
 // GetMeWithContext calls `getMe` telegram endpoint for testing token and returns its response
 //
 // See: https://core.telegram.org/bots/api#getme
-func (bot *Bot) GetMeWithContext(ctx context.Context) (*GetMeResponse, error) {
+func (bot *Bot) GetMeWithContext(ctx context.Context) (GetMeResponse, error) {
+	var getMeResp botResponse[GetMeResponse]
+
 	const method string = "getMe"
 	endpointUrl := bot.methodUrl(method)
 	req, err := http.NewRequestWithContext(ctx, "GET", endpointUrl, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating bot request: %w", err)
+		return getMeResp.Result, fmt.Errorf("error creating bot request: %w", err)
 	}
 
 	resp, err := bot.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error sending bot request: %w", err)
+		return getMeResp.Result, fmt.Errorf("error sending bot request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var getMeResp botResponse[GetMeResponse]
 	if err := json.NewDecoder(resp.Body).Decode(&getMeResp); err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
+		return getMeResp.Result, fmt.Errorf("error reading response body: %w", err)
 	}
 	if !getMeResp.Ok {
-		return nil, TgApiError{getMeResp.ErrorCode, method, getMeResp.Description}
+		return getMeResp.Result, TgApiError{getMeResp.ErrorCode, method, getMeResp.Description}
 	}
 	if !getMeResp.Result.IsBot {
-		return nil, ErrNotABot
+		return getMeResp.Result, ErrNotABot
 	}
-	return &getMeResp.Result, nil
+	return getMeResp.Result, nil
 }
 
 //==============================================================================

@@ -7,7 +7,7 @@ import (
 )
 
 type Healthcheck struct {
-	Bot *tgnotifier.Bot
+	Bot tgnotifier.BotInterface
 }
 
 func (h Healthcheck) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -68,5 +68,6 @@ func GetLogger(ctx context.Context) *slog.Logger {
 }
 
 func GetRequestId(ctx context.Context) string {
-	return ctx.Value(loggingContextRequestId).(string)
+	contextId, _ := ctx.Value(loggingContextRequestId).(string)
+	return contextId
 }
