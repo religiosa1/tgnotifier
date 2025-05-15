@@ -13,7 +13,7 @@ type CommonBotCliArgs struct {
 }
 
 func (cmd *CommonBotCliArgs) MergeConfig(cfg config.Config) {
-	if len(cmd.Recipients) != 0 {
+	if len(cmd.Recipients) == 0 {
 		cmd.Recipients = cfg.Recipients
 	}
 	if cmd.BotToken == "" {

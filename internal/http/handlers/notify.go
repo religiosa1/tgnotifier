@@ -33,7 +33,7 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp := models.ResponsePayload{RequestId: middleware.GetRequestId(r.Context())}
+	resp := models.ResponsePayload{}
 
 	var payload RequestPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

@@ -16,7 +16,7 @@ import (
 )
 
 // We can't use enums, default values, etc. unless we implement a custom resolver
-// in cong, to apply config. And we can't do that either, until this issue is resolved
+// in kong to apply config. And we can't do that either, until this issue is resolved
 // as we need to know if config was set explicitely: https://github.com/alecthomas/kong/issues/365
 
 type Serve struct {
@@ -45,9 +45,7 @@ func (cmd *Serve) ValidatePostMerge() error {
 	if err := cmd.CommonBotCliArgs.ValidatePostMerge(); err != nil {
 		return err
 	}
-	switch cmd.LogType {
-	case "text", "json":
-	default:
+	if cmd.LogType != "text" && cmd.LogType != "json" {
 		return errors.New(`incorrect value for log type, only "text" and "json" are supported`)
 	}
 	if len(cmd.Recipients) == 0 {

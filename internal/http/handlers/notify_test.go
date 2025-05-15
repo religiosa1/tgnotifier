@@ -37,7 +37,7 @@ func TestNotify_Success(t *testing.T) {
 	handler.ServeHTTP(resp, req)
 
 	require.Equal(t, http.StatusOK, resp.Code)
-	expectedBody := `{"requestId":"","success":true}`
+	expectedBody := `{"success":true}`
 	require.Equal(t, expectedBody, trimRespBody(resp))
 }
 
@@ -54,7 +54,7 @@ func TestNotify_MissingBody(t *testing.T) {
 	handler.ServeHTTP(resp, req)
 
 	require.Equal(t, http.StatusBadRequest, resp.Code)
-	expectedBody := `{"requestId":"","success":false,"error":"no body was provided"}`
+	expectedBody := `{"success":false,"error":"no body was provided"}`
 	require.Equal(t, expectedBody, trimRespBody(resp))
 }
 
@@ -72,7 +72,7 @@ func TestNotify_BadJSON(t *testing.T) {
 	handler.ServeHTTP(resp, req)
 
 	require.Equal(t, http.StatusBadRequest, resp.Code)
-	expectedBody := `{"requestId":"","success":false,"error":"unexpected EOF"}`
+	expectedBody := `{"success":false,"error":"unexpected EOF"}`
 	require.Equal(t, expectedBody, trimRespBody(resp))
 }
 
@@ -92,7 +92,7 @@ func TestNotify_SendMessageFails_Internal(t *testing.T) {
 	handler.ServeHTTP(resp, req)
 
 	require.Equal(t, http.StatusInternalServerError, resp.Code)
-	expectedBody := `{"requestId":"","success":false,"error":"some internal error"}`
+	expectedBody := `{"success":false,"error":"some internal error"}`
 	require.Equal(t, expectedBody, trimRespBody(resp))
 }
 
@@ -117,6 +117,6 @@ func TestNotify_TgApiError_BadRequest(t *testing.T) {
 	handler.ServeHTTP(resp, req)
 
 	require.Equal(t, http.StatusBadRequest, resp.Code)
-	expectedBody := fmt.Sprintf(`{"requestId":"","success":false,"error":"%s"}`, err.Error())
+	expectedBody := fmt.Sprintf(`{"success":false,"error":"%s"}`, err.Error())
 	require.Equal(t, expectedBody, trimRespBody(resp))
 }

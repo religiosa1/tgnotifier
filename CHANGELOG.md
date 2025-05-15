@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - lib: support for new fields in the `GetMe` method response:
     `CanConnectToBusiness` and `HasMainWebApp`
 - lib: `NewWithClient` method, to supply a custom http.Client for the bot
+- service: Ability to disable X-Api-Token authentication by not supplying any token
 ### Changed
 - fix spelling across the project "recepient" -> "recipient"
 - lib: `New()` now returns `(*Bot, error)` and may fail on empty token
@@ -25,7 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `FistName` -> `FirstName`, `CanJoingGroups` -> `CanJoinGroups`
 - cli: CLI parsing has been reworked. The `-generate-key` flag is now
     a `generate-key` subcommand (no dash)
-- service: response `request_id` is now returned as a ULID instead of a UUID
+- service: response `request_id` is now returned in the response header 
+    and as a ULID instead of a UUID
 - service: instead of `env` files implicitely affecting logger output, you 
     can explicitely specify `loggerType` as `text` or `json`
 - service: all of the current config values can now be overriden with a cli flag
