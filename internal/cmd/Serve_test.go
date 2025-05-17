@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/religiosa1/tgnotifier/internal/cmd"
+	"github.com/religiosa1/tgnotifier/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestServe_parseFlags(t *testing.T) {
 	var cmd cmd.Serve
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{"-r", "1,2,3", "-c", "test-conf", "--bot-token", "test-token",
 		"--log-type", "text",
 		"--log-level", "warn",
@@ -30,17 +31,17 @@ func TestServe_parseFlags(t *testing.T) {
 
 func TestServe_parseWithDefaultsFromConfig(t *testing.T) {
 	var cmd cmd.Serve
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{})
 	if err != nil {
 		t.Fatalf("error parsing args: %v", err)
 	}
-	assert.Equal(t, mockConfig.Recipients, cmd.Recipients)
-	assert.Equal(t, mockConfig.BotToken, cmd.BotToken)
-	assert.Equal(t, mockConfig.LogType, cmd.LogType)
-	assert.Equal(t, mockConfig.LogLevel, cmd.LogLevel)
-	assert.Equal(t, mockConfig.ApiKey, cmd.ApiKey)
-	assert.Equal(t, mockConfig.Address, cmd.Address)
+	assert.Equal(t, test.MockConfig.Recipients, cmd.Recipients)
+	assert.Equal(t, test.MockConfig.BotToken, cmd.BotToken)
+	assert.Equal(t, test.MockConfig.LogType, cmd.LogType)
+	assert.Equal(t, test.MockConfig.LogLevel, cmd.LogLevel)
+	assert.Equal(t, test.MockConfig.ApiKey, cmd.ApiKey)
+	assert.Equal(t, test.MockConfig.Address, cmd.Address)
 }
 
 func TestServe_parseEnvOverridesDefaults(t *testing.T) {
@@ -53,7 +54,7 @@ func TestServe_parseEnvOverridesDefaults(t *testing.T) {
 	t.Setenv("BOT_ADDR", "test-addr")
 
 	var cmd cmd.Serve
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{})
 	if err != nil {
 		t.Fatalf("error parsing args: %v", err)
@@ -72,7 +73,7 @@ func TestServe_parsePriorityFlagEnvConfig(t *testing.T) {
 	t.Setenv("BOT_LOG_TYPE", "text")
 
 	var cmd cmd.Serve
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{
 		"--bot-token", "super-token",
 		"--recipients", "5,6,7",
@@ -83,7 +84,7 @@ func TestServe_parsePriorityFlagEnvConfig(t *testing.T) {
 	assert.Equal(t, []string{"5", "6", "7"}, cmd.Recipients) // flag overrides calue without env
 	assert.Equal(t, "super-token", cmd.BotToken)             // flag overrides value with env
 	assert.Equal(t, "text", cmd.LogType)                     // env overrides value without flag
-	assert.Equal(t, mockConfig.LogLevel, cmd.LogLevel)       // config is still the defaul
-	assert.Equal(t, mockConfig.ApiKey, cmd.ApiKey)
-	assert.Equal(t, mockConfig.Address, cmd.Address)
+	assert.Equal(t, test.MockConfig.LogLevel, cmd.LogLevel)  // config is still the defaul
+	assert.Equal(t, test.MockConfig.ApiKey, cmd.ApiKey)
+	assert.Equal(t, test.MockConfig.Address, cmd.Address)
 }

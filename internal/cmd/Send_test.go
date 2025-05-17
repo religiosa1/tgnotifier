@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/religiosa1/tgnotifier/internal/cmd"
+	"github.com/religiosa1/tgnotifier/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +20,7 @@ func TestSend_parseFlags(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var cmd cmd.Send
-			p := newCliParserWithConfig(t, &cmd, mockConfig)
+			p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 			_, err := p.Parse(tt.args)
 			if err != nil {
 				t.Fatalf("error parsing args: %v", err)
@@ -35,25 +36,23 @@ func TestSend_parseFlags(t *testing.T) {
 
 func TestSend_parseWithDefaultsFromConfig(t *testing.T) {
 	var cmd cmd.Send
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{"ipsum"})
 	if err != nil {
 		t.Fatalf("error parsing args: %v", err)
 	}
 	assert.Equal(t, "", cmd.ParseMode) // no defaults for parseMode, that's for Bot to handle
-	assert.Equal(t, mockConfig.Recipients, cmd.Recipients)
-	assert.Equal(t, mockConfig.BotToken, cmd.BotToken)
+	assert.Equal(t, test.MockConfig.Recipients, cmd.Recipients)
+	assert.Equal(t, test.MockConfig.BotToken, cmd.BotToken)
 	assert.Equal(t, "ipsum", cmd.Message)
 }
-
-// TODO test no config
 
 func TestSend_parseWithEnv(t *testing.T) {
 	t.Setenv("BOT_RECIPIENTS", "7,8,9")
 	t.Setenv("BOT_TOKEN", "test-token")
 
 	var cmd cmd.Send
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{"-m", "HTML"})
 	if err != nil {
 		t.Fatalf("error parsing args: %v", err)
@@ -68,7 +67,7 @@ func TestSend_parsePriorityFlagEnvConfig(t *testing.T) {
 	t.Setenv("BOT_TOKEN", "test-token")
 
 	var cmd cmd.Send
-	p := newCliParserWithConfig(t, &cmd, mockConfig)
+	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
 	_, err := p.Parse([]string{"-m", "HTML", "-r", "5,6,7"})
 	if err != nil {
 		t.Fatalf("error parsing args: %v", err)
@@ -77,5 +76,3 @@ func TestSend_parsePriorityFlagEnvConfig(t *testing.T) {
 	assert.Equal(t, []string{"5", "6", "7"}, cmd.Recipients) // flag overrides env
 	assert.Equal(t, "test-token", cmd.BotToken)              // env without flag
 }
-
-// TODO test validation
