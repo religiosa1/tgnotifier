@@ -42,10 +42,8 @@ func TestNotify_Success(t *testing.T) {
 }
 
 func TestNotify_MissingBody(t *testing.T) {
-	mockBot := &mockBot{}
-
 	handler := handlers.Notify{
-		Bot:        mockBot,
+		Bot:        &mockBot{},
 		Recipients: []string{"user1"},
 	}
 
@@ -59,10 +57,8 @@ func TestNotify_MissingBody(t *testing.T) {
 }
 
 func TestNotify_BadJSON(t *testing.T) {
-	mockBot := &mockBot{}
-
 	handler := handlers.Notify{
-		Bot:        mockBot,
+		Bot:        &mockBot{},
 		Recipients: []string{"user1"},
 	}
 
@@ -77,12 +73,8 @@ func TestNotify_BadJSON(t *testing.T) {
 }
 
 func TestNotify_SendMessageFails_Internal(t *testing.T) {
-	mockBot := &mockBot{
-		Err: errors.New("some internal error"),
-	}
-
 	handler := handlers.Notify{
-		Bot:        mockBot,
+		Bot:        &mockBot{Err: errors.New("some internal error")},
 		Recipients: []string{"user1"},
 	}
 
@@ -102,12 +94,9 @@ func TestNotify_TgApiError_BadRequest(t *testing.T) {
 		Method:      "sendMessage",
 		Description: "bad token",
 	}
-	mockBot := &mockBot{
-		Err: err,
-	}
 
 	handler := handlers.Notify{
-		Bot:        mockBot,
+		Bot:        &mockBot{Err: err},
 		Recipients: []string{"user1"},
 	}
 

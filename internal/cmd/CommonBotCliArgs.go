@@ -6,6 +6,11 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/config"
 )
 
+type CommandInterface interface {
+	MergeConfig(cfg config.Config)
+	ValidatePostMerge() error
+}
+
 type CommonBotCliArgs struct {
 	Config     string   `placeholder:"${default_config_path}" short:"c" help:"Configuration file name ($BOT_CONFIG_PATH)"`
 	Recipients []string `short:"r" help:"Message recipients, comma separated (defaults to value from config or $BOT_RECIPIENTS)"`
@@ -22,8 +27,12 @@ func (cmd *CommonBotCliArgs) MergeConfig(cfg config.Config) {
 }
 
 func (cmd *CommonBotCliArgs) ValidatePostMerge() error {
+	// this all is also validated in the Bot itself, it's here only for the more informative error message
 	if cmd.BotToken == "" {
 		return errors.New("bot_token must be provided through the CLI, config or environment variable")
+	}
+	if len(cmd.Recipients) == 0 {
+		return errors.New("recipients list must be provided through the CLI, config or environment variable")
 	}
 	return nil
 }

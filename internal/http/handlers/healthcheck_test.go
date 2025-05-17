@@ -24,11 +24,11 @@ func TestHealthcheck(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			mockBot := &mockBot{
+			bot := &mockBot{
 				Err:           tt.Err,
 				GetMeResponse: tt.GetMeResponse,
 			}
-			handler := handlers.Healthcheck{Bot: mockBot}
+			handler := handlers.Healthcheck{Bot: bot}
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			resp := httptest.NewRecorder()
 

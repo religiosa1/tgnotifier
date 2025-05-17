@@ -34,9 +34,9 @@ func (cmd *Send) Run() error {
 	if err != nil {
 		return err
 	}
-	cmd.CommonBotCliArgs.MergeConfig(cfg)
+	cmd.MergeConfig(cfg)
 	// we're not validating the Send struct, only common args, allowing bot to error out
-	if err := cmd.CommonBotCliArgs.ValidatePostMerge(); err != nil {
+	if err := cmd.ValidatePostMerge(); err != nil {
 		return err
 	}
 	bot, err := tgnotifier.New(cmd.BotToken)

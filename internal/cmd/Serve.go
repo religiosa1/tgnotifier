@@ -15,15 +15,16 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/http/middleware"
 )
 
-// We can't use enums, default values, etc. unless we implement a custom resolver
-// in kong to apply config. And we can't do that either, until this issue is resolved
-// as we need to know if config was set explicitely: https://github.com/alecthomas/kong/issues/365
+// We can't use enums, default values, etc. in struct tags unless we implement
+// a custom resolver in kong to apply config. And we can't do that either,
+// until this issue is resolved as we need to know if config was set explicitely:
+// https://github.com/alecthomas/kong/issues/365
 
 type Serve struct {
 	CommonBotCliArgs `embed:""`
+	Address          string `arg:"" optional:"" env:"BOT_ADDR" placeholder:"localhost:6000" help:"HTTP server listening address ($BOT_ADDR)"`
 	LogType          string `placeholder:"text" help:"Logger output type ($BOT_LOG_TYPE)"`
 	LogLevel         string `placeholder:"info" help:"Minimum logging level ($BOT_LOG_LEVEL)"`
-	Address          string `arg:"" optional:"" env:"BOT_ADDR" default:"localhost:6000" help:"HTTP server listening address ($BOT_ADDR)"`
 	ApiKey           string `help:"API key, passed in 'x-api-key' header to authorize incoming requests ($BOT_API_KEY)"`
 }
 
@@ -47,9 +48,6 @@ func (cmd *Serve) ValidatePostMerge() error {
 	}
 	if cmd.LogType != "text" && cmd.LogType != "json" {
 		return errors.New(`incorrect value for log type, only "text" and "json" are supported`)
-	}
-	if len(cmd.Recipients) == 0 {
-		return errors.New("recipients list must be provided through the CLI, config or environment variable")
 	}
 	return nil
 }

@@ -7,13 +7,30 @@ It can be used to send notifications about pipeline errors/completions,
 some long running process finished, etc.
 
 It's intended to be simple to deploy and use, without much configuration.
+At the same time it requires some actions from users prior to recieving 
+notifications, so it can't be used to spam random people.
+
+## Initial Telegram Bot setup
+
+To use the service you will need to connect a telegram bot via a bot token, 
+which will send the notifications. You can create a bot through
+telegram's interface called BotFather, as described in their 
+[tutorial](https://core.telegram.org/bots/tutorial#getting-ready).
+
+Besides that, you need to know telegram id's of users to whom you want to 
+send the notifications. You can do that via the [userinfobot](https://t.me/userinfobot).
+
+Before you can recieve notifications from the bot, you must iniate the communication
+with it. Go to it's page (through the username, provided by the BotFather) and
+click on the "start" button. This applies to every user in your recipients list
+that want to get the notifications.
 
 ## Usage
 
 ### As a go library
 
 ```sh
-go get github.com/religiosa1/tgnotifier@latest
+go get 'github.com/religiosa1/tgnotifier@latest'
 ```
 
 ```go
@@ -91,7 +108,7 @@ valid, there's no network outages etc.
 ### As a CLI util
 
 You can use the app to send notification through CLI
-from your shell or scripts.
+from your shell, scripts, cron, etc.
 
 ```sh
 ./tgnotifier send "Your message goes here"
@@ -131,21 +148,6 @@ You can use ldflags, to override the default config file location:
 go build -o tgnotifier -ldflags="-X 'internal.config.DefaultConfigPath=/etc/tgnotifier.yml'" ./cmd/main.go
 ```
 
-## Initial app setup
-
-To use the service you will need to connect a telegram bot via a bot token, 
-which will send the notifications. You can create a bot through
-telegram's interface called BotFather, as described in their 
-[tutorial](https://core.telegram.org/bots/tutorial#getting-ready).
-
-Besides that, you need to know telegram id's of users to whom you want to 
-send the notifications. You can do that via the [userinfobot](https://t.me/userinfobot).
-
-Before you can recieve notifications from the bot, you must iniate the communication
-with it. Go to it's page (through the username, provided by the BotFather) and
-click on the "start" button. This applies to every user in your recipients list
-that want to get the notifications.
-
 ### App config
 
 Configuration of the app can be provided as a yaml config file, or through
@@ -174,9 +176,8 @@ You can override which file to load calling it with the flag:
 Alternatively, you can set all of the configuration with environment variables.
 
 ### API KEY
-You need an API key, to authorize the incoming request. 
-It should be a string of random characters at least 60 characters long. 
-
+You can use API key mechanism, to authorize the incoming request. 
+It can be any string of characters, but better if it's cryptografically secure.
 You can generate an API key with the corresponding command:
 
 ```sh
@@ -190,6 +191,12 @@ This key should be supplied with each http request to the bot via the header
 IMPORTANT! Make sure, you don't expose your API key (i.e. don't send those requests
 directly from a web page), as anyone who has network access to the service and
 has the key can send those notification requests.
+
+If you don't specify an API-key in the config, env, or CLI authorization will 
+be disabled and service will serve any request.
+
+Please notice, there's no internal rate limiting inside of the service, you 
+need to handle that, if you want to be safe.
 
 
 ## License
