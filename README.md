@@ -145,7 +145,7 @@ Refer to the go docs on crosscompilation and stuff.
 You can use ldflags, to override the default config file location:
 
 ```sh
-go build -o tgnotifier -ldflags="-X 'internal.config.DefaultConfigPath=/etc/tgnotifier.yml'" ./cmd/main.go
+go build -o tgnotifier -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath=/etc/tgnotifier.yml'" ./cmd/main.go
 ```
 
 ### App config

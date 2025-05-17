@@ -7,7 +7,8 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-const DefaultConfigPath = "config.yml"
+var DefaultConfigPath = "config.yml"
+
 const configPathEnvKey = "BOT_CONFIG_PATH"
 
 type Config struct {
