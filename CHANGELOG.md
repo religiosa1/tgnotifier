@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- `--version` CLI flag
+### Fixed
+- `go install` binary name and corresponding readme fix
+
 ## [2.0.0] - 2025.05.17
 ### Added 
 - cli: new `send` subcommand to send Telegram messages directly from the command

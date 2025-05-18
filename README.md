@@ -1,10 +1,15 @@
 # Simple telegram notification service
 
+A lightweight http client for tg, exposing only two methods: 
+[sendMessage](https://core.telegram.org/bots/api#sendmessage) and 
+[getMe](https://core.telegram.org/bots/api#getme).
+
 Allows you to send [telegram](https://telegram.org/) text messages to a small 
 list of predefined users through a CLI, a REST API or as golang library.
 
-It can be used to send notifications about pipeline errors/completions, 
-some long running process finished, etc.
+It can be used to send various notifications to your personal account, or 
+a group chat about pipeline errors/completions, some long running process 
+finished, etc.
 
 It's intended to be simple to deploy and use, without much configuration.
 At the same time it requires some actions from users prior to recieving 
@@ -127,7 +132,7 @@ release section.
 Alternatively if you have [Golang](https://go.dev/) available:
 
 ```sh
-go install 'github.com/religiosa1/tgnotifier@latest'
+go install 'github.com/religiosa1/tgnotifier/cmd/tgnotifier@latest'
 ```
 
 ## Building app from source
@@ -135,9 +140,9 @@ go install 'github.com/religiosa1/tgnotifier@latest'
 To build the application you need [Go](https://go.dev/) version 1.22 or higher.
 
 ```sh
-go build -o tgnotifier ./cmd/main.go 
+go build ./cmd/tgnotifier/tgnotifier.go 
 # on windows:
-go build -o tgnotifier.exe .\cmd\main.go
+go build .\cmd\tgnotifier\tgnotifier.go
 ```
 
 Refer to the go docs on crosscompilation and stuff.
@@ -145,8 +150,15 @@ Refer to the go docs on crosscompilation and stuff.
 You can use ldflags, to override the default config file location:
 
 ```sh
-go build -o tgnotifier -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath=/etc/tgnotifier.yml'" ./cmd/main.go
+go build -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath=/etc/tgnotifier.yml'" ./cmd/tgnotifier/tgnotifier.go
 ```
+
+Or using provided [taskfile](https://taskfile.dev/):
+
+```sh
+task build DEFAULT_CONFIG=/etc/tgnotifier.yml
+```
+
 
 ### App config
 

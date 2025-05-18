@@ -1,3 +1,4 @@
 *.exe
-tgnotifier
+/tgnotifier
 config.yml
+build

@@ -1,0 +1,46 @@
+version: "3"
+
+vars:
+  NAME: "tgnotifier"
+
+tasks:
+  default:
+    - task: build
+
+  build-matrix:
+    vars:
+      DEFAULT_CONFIG: '{{ default "config.yml" .DEFAULT_CONFIG }}'
+      VERSION: '{{ default "" .VERSION }}'
+      MATRIX:
+        - { OS: "linux", ARCH: "amd64" }
+        - { OS: "linux", ARCH: "arm" }
+        - { OS: "linux", ARCH: "arm64" }
+        - { OS: "darwin", ARCH: "amd64" }
+        - { OS: "darwin", ARCH: "arm64" }
+        - { OS: "windows", ARCH: "amd64" }
+    cmds:
+      - for: { var: MATRIX }
+        cmd: |
+          CGO_ENABLED=0 GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} go build \
+            -ldflags="-X 'main.version={{ .VERSION }}' \
+              -X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath={{ .DEFAULT_CONFIG }}'" \
+            -o build/{{ .NAME }}-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} \
+            ./cmd/{{ .NAME }}/{{ .NAME }}.go
+
+  build:
+    vars:
+      DEFAULT_CONFIG: '{{ default "config.yml" .DEFAULT_CONFIG }}'
+      VERSION: '{{ default "" .VERSION }}'
+    cmd: |
+      CGO_ENABLED=0 go build \
+        -ldflags="-X 'main.version={{ .VERSION }}' \
+          -X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath={{ .DEFAULT_CONFIG }}'" \
+        ./cmd/{{ .NAME }}/{{ .NAME }}.go 
+
+  test:
+    cmds:
+      - go test ./...
+
+  clean:
+    cmds:
+      - rm -rf build
