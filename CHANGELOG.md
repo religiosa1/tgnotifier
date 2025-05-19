@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [2.0.1] - 2025.05.19
+## [1.1.0] - 2025.05.19
+### Changed
+- Versioning scheme changed to downgrade to major version 1.
+
+## [2.0.1] - 2025.05.19 [YANKED]
 ### Added
 - `--version` CLI flag
 ### Fixed
 - `go install` binary name and corresponding readme fix
 
-## [2.0.0] - 2025.05.17
+## [2.0.0] - 2025.05.17 [YANKED]
 ### Added 
 - cli: new `send` subcommand to send Telegram messages directly from the command
     line (e.g. for use in cron jobs)
