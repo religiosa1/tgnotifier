@@ -24,8 +24,8 @@ tasks:
           CGO_ENABLED=0 GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} go build \
             -ldflags="-X 'main.version={{ .VERSION }}' \
               -X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath={{ .DEFAULT_CONFIG }}'" \
-            -o build/{{ .NAME }}-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} \
-            ./cmd/{{ .NAME }}/{{ .NAME }}.go
+            -o build/{{ .NAME }}-{{ .ITEM.OS }}-{{ .ITEM.ARCH }}{{if eq .ITEM.OS "windows"}}.exe{{end}} \
+            'github.com/religiosa1/{{ .NAME }}/cmd/{{ .NAME }}'
 
   build:
     vars:
@@ -35,7 +35,7 @@ tasks:
       CGO_ENABLED=0 go build \
         -ldflags="-X 'main.version={{ .VERSION }}' \
           -X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath={{ .DEFAULT_CONFIG }}'" \
-        ./cmd/{{ .NAME }}/{{ .NAME }}.go 
+        'github.com/religiosa1/{{ .NAME }}/cmd/{{ .NAME }}'
 
   test:
     cmds:

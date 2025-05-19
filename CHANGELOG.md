@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.1] - 2025.05.19
+### Fixed
+- `go install` --version CLI flag always returning development verion
+
 ## [1.1.0] - 2025.05.19
 ### Changed
 - Versioning scheme changed to downgrade to major version 1.

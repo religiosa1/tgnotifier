@@ -139,24 +139,34 @@ go install 'github.com/religiosa1/tgnotifier/cmd/tgnotifier@latest'
 
 To build the application you need [Go](https://go.dev/) version 1.22 or higher.
 
+Using provided [taskfile](https://taskfile.dev/):
+
 ```sh
-go build ./cmd/tgnotifier/tgnotifier.go 
-# on windows:
-go build .\cmd\tgnotifier\tgnotifier.go
+task build
+```
+
+Or manually:
+
+```sh
+go build github.com/religiosa1/tgnotifier/cmd/tgnotifier
 ```
 
 Refer to the go docs on crosscompilation and stuff.
 
-You can use ldflags, to override the default config file location:
+You can use ldflags, to override the default config file location.
 
-```sh
-go build -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath=/etc/tgnotifier.yml'" ./cmd/tgnotifier/tgnotifier.go
-```
-
-Or using provided [taskfile](https://taskfile.dev/):
+Using taskfile's variables:
 
 ```sh
 task build DEFAULT_CONFIG=/etc/tgnotifier.yml
+```
+
+or manually:
+
+```sh
+go build \
+  -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath=/etc/tgnotifier.yml'" \
+   github.com/religiosa1/tgnotifier/cmd/tgnotifier
 ```
 
 

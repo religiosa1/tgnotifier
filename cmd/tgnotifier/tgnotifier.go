@@ -45,20 +45,14 @@ func showVersion() {
 		return
 	}
 
-	// if not defined, using version from buildinfo
+	// if ldflags verions is not defined, using version from buildinfo
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		fmt.Println("Build information not available")
 		return
 	}
 
-	var buildVersion string
-	for _, dep := range info.Deps {
-		if dep.Path == "github.com/religiosa1/tgnotifier" {
-			buildVersion = dep.Version
-			break
-		}
-	}
+	buildVersion := info.Main.Version
 
 	switch buildVersion {
 	case "":
