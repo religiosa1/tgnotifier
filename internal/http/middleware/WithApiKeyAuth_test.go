@@ -11,7 +11,7 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
-const validKey = "supersecretapikey"
+const validKey = "superSecretApiKey"
 
 func testHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func TestApiKeyAuth_InvalidKey(t *testing.T) {
 	handler := mw(testHandler())
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("x-api-key", "wrongkey")
+	req.Header.Set("x-api-key", "wrongKey")
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)

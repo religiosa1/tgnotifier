@@ -16,7 +16,7 @@ type Config struct {
 	LogType string `yaml:"log_type" env:"BOT_LOG_TYPE" env-default:"text"`
 	// logger minimum level: "debug", "info", "warn", "error"
 	LogLevel string `yaml:"log_level" env:"BOT_LOG_LEVEL" env-default:"info"`
-	// your bot token as given by botfathers
+	// your bot token as given by botfather
 	BotToken   string   `yaml:"bot_token" env:"BOT_TOKEN"`
 	Recipients []string `yaml:"recipients" env:"BOT_RECIPIENTS"`
 	Address    string   `yaml:"address" env:"BOT_ADDR" env-default:"localhost:6000"`
@@ -25,8 +25,8 @@ type Config struct {
 }
 
 func Load(configPath string) (Config, error) {
-	pathExplicitelySet := configPath != ""
-	if !pathExplicitelySet {
+	pathExplicitlySet := configPath != ""
+	if !pathExplicitlySet {
 		configPath = os.Getenv(configPathEnvKey)
 		if configPath == "" {
 			configPath = DefaultConfigPath
@@ -34,7 +34,7 @@ func Load(configPath string) (Config, error) {
 	}
 	var cfg Config
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		if pathExplicitelySet {
+		if pathExplicitlySet {
 			return cfg, fmt.Errorf("specified config file does not exist: %s", configPath)
 		}
 		if err := cleanenv.ReadEnv(&cfg); err != nil {

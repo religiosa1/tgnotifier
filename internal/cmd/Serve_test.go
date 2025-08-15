@@ -81,10 +81,10 @@ func TestServe_parsePriorityFlagEnvConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error parsing args: %v", err)
 	}
-	assert.Equal(t, []string{"5", "6", "7"}, cmd.Recipients) // flag overrides calue without env
+	assert.Equal(t, []string{"5", "6", "7"}, cmd.Recipients) // flag overrides value without env
 	assert.Equal(t, "super-token", cmd.BotToken)             // flag overrides value with env
 	assert.Equal(t, "text", cmd.LogType)                     // env overrides value without flag
-	assert.Equal(t, test.MockConfig.LogLevel, cmd.LogLevel)  // config is still the defaul
+	assert.Equal(t, test.MockConfig.LogLevel, cmd.LogLevel)  // config is still the default
 	assert.Equal(t, test.MockConfig.ApiKey, cmd.ApiKey)
 	assert.Equal(t, test.MockConfig.Address, cmd.Address)
 }

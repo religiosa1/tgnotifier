@@ -17,7 +17,7 @@ import (
 
 // We can't use enums, default values, etc. in struct tags unless we implement
 // a custom resolver in kong to apply config. And we can't do that either,
-// until this issue is resolved as we need to know if config was set explicitely:
+// until this issue is resolved as we need to know if config was set explicitly:
 // https://github.com/alecthomas/kong/issues/365
 
 type Serve struct {
@@ -105,12 +105,12 @@ func setupLogger(logType string, logLevel string) *slog.Logger {
 	var logger *slog.Logger
 	var programLevel = new(slog.LevelVar)
 	programLevel.Set(strLogLevelToEnumValue(logLevel))
-	hdlrOpts := &slog.HandlerOptions{Level: programLevel}
+	handlerOpts := &slog.HandlerOptions{Level: programLevel}
 	switch logType {
 	case "text":
-		logger = slog.New(slog.NewTextHandler(os.Stdout, hdlrOpts))
+		logger = slog.New(slog.NewTextHandler(os.Stdout, handlerOpts))
 	case "json":
-		logger = slog.New((slog.NewJSONHandler(os.Stdout, hdlrOpts)))
+		logger = slog.New((slog.NewJSONHandler(os.Stdout, handlerOpts)))
 	default:
 		log.Fatalf("Unknown logger type %s", logType)
 	}

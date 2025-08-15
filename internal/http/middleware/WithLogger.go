@@ -9,10 +9,10 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-type LogginContextKey string
+type LoggingContextKey string
 
-const loggingContextRequestId = LogginContextKey("logging_context.request_id")
-const logginContextLogger = LogginContextKey("logging_context.logger")
+const loggingContextRequestId = LoggingContextKey("logging_context.request_id")
+const loggingContextLogger = LoggingContextKey("logging_context.logger")
 
 type LoggingContext struct {
 	Logger    *slog.Logger
@@ -26,7 +26,7 @@ func WithLogger(logger *slog.Logger) Middleware {
 			newLogger := logger.With(slog.String("request_id", id))
 
 			ctx := context.WithValue(r.Context(), loggingContextRequestId, id)
-			ctx = context.WithValue(ctx, logginContextLogger, newLogger)
+			ctx = context.WithValue(ctx, loggingContextLogger, newLogger)
 
 			newLogger.Info("Incoming request",
 				slog.String("method", r.Method),
@@ -60,7 +60,7 @@ func (rw *responseWriter) WriteHeader(code int) {
 }
 
 func GetLogger(ctx context.Context) *slog.Logger {
-	logger, ok := ctx.Value(logginContextLogger).(*slog.Logger)
+	logger, ok := ctx.Value(loggingContextLogger).(*slog.Logger)
 	if !ok {
 		logger = slog.Default()
 	}
