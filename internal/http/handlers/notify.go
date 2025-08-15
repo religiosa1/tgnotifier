@@ -12,6 +12,7 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
+// TODO add optional recipients list to payload
 type RequestPayload struct {
 	Message   string               `json:"message"`
 	ParseMode tgnotifier.ParseMode `json:"parse_mode"`

@@ -11,6 +11,11 @@ var DefaultConfigPath = "config.yml"
 
 const configPathEnvKey = "BOT_CONFIG_PATH"
 
+// TODO change the default config path to
+// $XDG_CONFIG_HOME/tgnotifier/config.yml | %APPDATA%\tgnotifier\config.yml
+// Consider potential global config
+// /etc/tgnotifier.yml | %PROGRAMDATA%\tgnotifier\config.yml
+
 type Config struct {
 	// logger type: "text", "json"
 	LogType string `yaml:"log_type" env:"BOT_LOG_TYPE" env-default:"text"`

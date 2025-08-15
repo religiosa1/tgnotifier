@@ -218,7 +218,7 @@ Upon launch, service tries to load the configuration file specified in the
 You can override which file to load calling it with the flag:
 
 ```sh
-./tgnotifier --config foo.yml
+tgnotifier --config foo.yml
 ```
 
 Alternatively, you can set all of the configuration with environment variables.
@@ -230,7 +230,7 @@ It can be any string of characters, but better if it's cryptographically secure.
 You can generate an API key with the corresponding command:
 
 ```sh
-./tgnotifier generate-key # it will output a new key to your terminal
+tgnotifier generate-key # it will output a new key to your terminal
 # Copy and paste it into the config/put it in env under the BOT_API_KEY
 ```
 
@@ -246,6 +246,75 @@ be disabled and service will serve any request.
 
 Please notice, there's no internal rate limiting inside of the service, you
 need to handle that, if you want to be safe.
+
+### Example configuration as a service on Linux
+
+Below is an example of setting up the service on Ubuntu Server 22, assuming you
+placed the app binary in `/usr/local/bin/tgnotifier`.
+
+Add a user to run the service:
+
+```sh
+sudo useradd --system --shell /usr/sbin/nologin tgnotifier
+```
+
+Add your configuration in /etc/tgnotifier.yml
+
+Make this configuration readable only to the tgnotifier group:
+
+```sh
+chown root:tgnotifier /etc/tgnotifier.yml
+chmod 640 /etc/tgnotifier.yml
+```
+
+Verify that `tgnotifier` can successfully send notifications:
+
+```sh
+# using which here to avoid potential path issues
+sudo -u tgnotifier $(which tgnotifier) send -c /etc/tgnotifier.yml "test"
+```
+
+Create a systemd init file `/etc/systemd/system/tgnotifier.service`:
+
+```systemd
+[Unit]
+Description=Telegram Notification Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tgnotifier
+ExecStart=/usr/local/bin/tgnotifier -c /etc/tgnotifier.yml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable the service:
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now tgnotifier.service
+```
+
+Check status and logs:
+
+```
+systemctl status tgnotifier
+journalctl -u tgnotifier -f
+```
+
+Get the healthcheck to verify it all worked:
+
+```sh
+curl -X GET -H "x-api-key: YOUR_API_KEY" http://localhost:6000/
+```
+
+By default app launches on localhost only, it will require a reverse proxy to be
+accessible from the outside world, such as [caddy](https://caddyserver.com/) or
+[nginx](https://nginx.org/).
 
 ## License
 
