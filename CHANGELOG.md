@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- missing Content-Type HTTP headers in the POST / response
 - various typos and spelling errors in comments and docs
+
+### Security
+
+- Bad/mismatched security keys are no longer captured in the logs
 
 ## [1.1.1] - 2025.05.19
 

@@ -27,8 +27,8 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.GetLogger(r.Context())
 
 	writeResponse := func(statusCode int, payload models.ResponsePayload) {
-		w.WriteHeader(statusCode)
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
 		if err := json.NewEncoder(w).Encode(payload); err != nil {
 			logger.Error("Error encoding response", slog.Any("error", err))
 		}

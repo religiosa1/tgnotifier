@@ -30,7 +30,7 @@ func WithApiKeyAuth(configKey string) Middleware {
 					w.WriteHeader(http.StatusUnauthorized)
 				} else {
 					resp.Error = "Authorization failed"
-					logger.Info("Invalid authorization key supplied", slog.String("key", requestKey))
+					logger.Info("Invalid authorization key supplied")
 					w.WriteHeader(http.StatusForbidden)
 				}
 				if err := json.NewEncoder(w).Encode(resp); err != nil {

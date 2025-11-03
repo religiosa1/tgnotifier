@@ -80,6 +80,7 @@ func (cmd *Serve) Run() error {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	errCh := make(chan error, 1)
 	go func() {
 		mux := http.NewServeMux()
 		middlewares := middleware.Chain(
@@ -91,13 +92,17 @@ func (cmd *Serve) Run() error {
 
 		if err := http.ListenAndServe(cmd.Address, mux); err != nil {
 			logger.Error("Error starting the server", slog.Any("error", err))
-			os.Exit(3)
+			errCh <- err
 		}
 	}()
 	logger.Info("Running bot http server", slog.String("address", cmd.Address), slog.Any("recipients", cmd.Recipients))
 
-	<-done
-	logger.Info("Server closed")
+	select {
+	case <-done:
+		logger.Info("Server closed")
+	case err := <-errCh:
+		return err
+	}
 	return nil
 }
 
