@@ -1,0 +1,47 @@
+# Version control
+.git
+.gitignore
+
+# Build artifacts
+build
+/tgnotifier
+*.exe
+
+# Environment and secrets
+.env
+*.env
+config.yml
+
+# Documentation
+README.md
+*.md
+docs
+LICENSE
+
+# Development files
+Taskfile.yml
+.editorconfig
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Docker files (not needed in build context)
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Testing
+*_test.go
+testdata
+
+# Temporary files
+*.tmp
+*.log

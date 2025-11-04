@@ -55,6 +55,8 @@ It is strongly encouraged to do that in a config file only available for you to
 read, so you don't expose your tokens and keys through the environment variables
 for the whole system.
 
+See instructions on [Docker image](#docker-image) launch bellow
+
 ## Usage
 
 ### As a CLI util
@@ -191,6 +193,49 @@ go build github.com/religiosa1/tgnotifier/cmd/tgnotifier
 ```
 
 Refer to the go docs on cross compilation and stuff.
+
+### Docker image
+
+You can also launch service via the provided docker image.
+
+**Using environment variables:**
+
+```sh
+docker run \
+  -e BOT_TOKEN=$(pass bot_token) \
+  -e BOT_API_KEY=$(pass bot_api_key) \
+  -e BOT_RECIPIENTS=123456789,987654321 \
+  -p 6000:6000 \
+  ghcr.io/religiosa1/tgnotifier:latest
+```
+
+Or create an env file and launch with that:
+
+```sh
+docker run --env-file .env -p 6000:6000 ghcr.io/religiosa1/tgnotifier:latest
+```
+
+Replace the recipient IDs with your actual Telegram user IDs. You can pass multiple recipients as a comma-separated list.
+
+**Using a config file:**
+
+Alternatively, you can mount a configuration file:
+
+```sh
+docker run \
+  -v /etc/tgnotifier.yml:/config.yml:ro \
+  -p 6000:6000 \
+  ghcr.io/religiosa1/tgnotifier:latest
+```
+
+**Important notes:**
+
+- **Required**: `BOT_TOKEN` (Telegram bot token)
+- **Recommended**: `BOT_API_KEY` (for authentication - without it, anyone can send requests)
+- **Optional**: `BOT_RECIPIENTS` (if not set, you must provide recipients in each API request payload)
+- See [App Config](#app-config) section for all configuration options
+- The container runs as a non-root user (UID 65532) for security
+- Health checks should be configured in your orchestration platform (Docker Compose, Kubernetes, etc.) using the `GET /` endpoint
 
 ### App config
 
