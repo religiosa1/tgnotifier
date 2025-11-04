@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to launch service or cli, without specifying recipients list in
   the config; `recipients` field in the config is now the default recipients
   list to use, if nothing is specified in the request payload or cli flags.
+- two-tier default config path system: user-specific config and global config
 
 ### Fixed
 

@@ -7,14 +7,7 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-var DefaultConfigPath = "config.yml"
-
 const configPathEnvKey = "BOT_CONFIG_PATH"
-
-// TODO change the default config path to
-// $XDG_CONFIG_HOME/tgnotifier/config.yml | %APPDATA%\tgnotifier\config.yml
-// Consider potential global config
-// /etc/tgnotifier.yml | %PROGRAMDATA%\tgnotifier\config.yml
 
 type Config struct {
 	// logger type: "text", "json"
@@ -30,23 +23,60 @@ type Config struct {
 }
 
 func Load(configPath string) (Config, error) {
+	var triedPaths []string
 	pathExplicitlySet := configPath != ""
+
 	if !pathExplicitlySet {
 		configPath = os.Getenv(configPathEnvKey)
-		if configPath == "" {
-			configPath = DefaultConfigPath
+		if configPath != "" {
+			triedPaths = append(triedPaths, fmt.Sprintf("%s (from %s)", configPath, configPathEnvKey))
 		}
+		if configPath == "" {
+			// Try default config paths in order: user config, then global config
+			defaultPaths := getDefaultConfigPaths()
+			for _, path := range defaultPaths {
+				triedPaths = append(triedPaths, path)
+				if _, err := os.Stat(path); err == nil {
+					configPath = path
+					break
+				}
+			}
+		}
+	} else {
+		triedPaths = append(triedPaths, fmt.Sprintf("%s (explicitly set)", configPath))
 	}
+
 	var cfg Config
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	fileExists := false
+	if configPath != "" {
+		_, err := os.Stat(configPath)
+		fileExists = !os.IsNotExist(err)
+	}
+
+	if !fileExists {
 		if pathExplicitlySet {
 			return cfg, fmt.Errorf("specified config file does not exist: %s", configPath)
 		}
 		if err := cleanenv.ReadEnv(&cfg); err != nil {
-			return cfg, fmt.Errorf("error loading configuration from environment: %w", err)
+			return cfg, fmt.Errorf("error loading configuration from environment: %w\nTried config paths:\n  %s",
+				err, formatTriedPaths(triedPaths))
 		}
 	} else if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
 		return cfg, fmt.Errorf("error loading configuration file: %w", err)
 	}
 	return cfg, nil
+}
+
+func formatTriedPaths(paths []string) string {
+	if len(paths) == 0 {
+		return "none"
+	}
+	result := ""
+	for i, path := range paths {
+		if i > 0 {
+			result += "\n  "
+		}
+		result += path
+	}
+	return result
 }

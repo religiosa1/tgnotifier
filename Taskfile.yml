@@ -9,7 +9,8 @@ tasks:
 
   build-matrix:
     vars:
-      DEFAULT_CONFIG: '{{ default "config.yml" .DEFAULT_CONFIG }}'
+      USER_CONFIG: '{{ default "" .USER_CONFIG }}'
+      GLOBAL_CONFIG: '{{ default "" .GLOBAL_CONFIG }}'
       VERSION: '{{ default "" .VERSION }}'
       MATRIX:
         - { OS: "linux", ARCH: "amd64" }
@@ -22,19 +23,22 @@ tasks:
       - for: { var: MATRIX }
         cmd: |
           CGO_ENABLED=0 GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} go build \
-            -ldflags="-X 'main.version={{ .VERSION }}' \
-              -X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath={{ .DEFAULT_CONFIG }}'" \
+            -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/cmd.version={{ .VERSION }}'{{if .USER_CONFIG}} \
+              -X 'github.com/religiosa1/tgnotifier/internal/config.UserConfigPath={{ .USER_CONFIG }}'{{end}}{{if .GLOBAL_CONFIG}} \
+              -X 'github.com/religiosa1/tgnotifier/internal/config.GlobalConfigPath={{ .GLOBAL_CONFIG }}'{{end}}" \
             -o build/{{ .NAME }}-{{ .ITEM.OS }}-{{ .ITEM.ARCH }}{{if eq .ITEM.OS "windows"}}.exe{{end}} \
             'github.com/religiosa1/{{ .NAME }}/cmd/{{ .NAME }}'
 
   build:
     vars:
-      DEFAULT_CONFIG: '{{ default "config.yml" .DEFAULT_CONFIG }}'
+      USER_CONFIG: '{{ default "" .USER_CONFIG }}'
+      GLOBAL_CONFIG: '{{ default "" .GLOBAL_CONFIG }}'
       VERSION: '{{ default "" .VERSION }}'
     cmd: |
       CGO_ENABLED=0 go build \
-        -ldflags="-X 'main.version={{ .VERSION }}' \
-          -X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath={{ .DEFAULT_CONFIG }}'" \
+        -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/cmd.version={{ .VERSION }}'{{if .USER_CONFIG}} \
+          -X 'github.com/religiosa1/tgnotifier/internal/config.UserConfigPath={{ .USER_CONFIG }}'{{end}}{{if .GLOBAL_CONFIG}} \
+          -X 'github.com/religiosa1/tgnotifier/internal/config.GlobalConfigPath={{ .GLOBAL_CONFIG }}'{{end}}" \
         'github.com/religiosa1/{{ .NAME }}/cmd/{{ .NAME }}'
 
   test:

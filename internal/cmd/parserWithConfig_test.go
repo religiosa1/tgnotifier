@@ -37,7 +37,6 @@ func newCliParserWithConfig(t *testing.T, cmd cmd.CommandInterface, cfg config.C
 			t.Helper()
 			t.Fatalf("unexpected exit()")
 		}),
-		kong.Vars{"default_config_path": config.DefaultConfigPath},
 	}
 	parser, err := kong.New(cmd, options...)
 	if err != nil {

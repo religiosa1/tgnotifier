@@ -192,22 +192,6 @@ go build github.com/religiosa1/tgnotifier/cmd/tgnotifier
 
 Refer to the go docs on cross compilation and stuff.
 
-You can use ldflags, to override the default config file location.
-
-Using taskfile's variables:
-
-```sh
-task build DEFAULT_CONFIG=/etc/tgnotifier.yml
-```
-
-or manually:
-
-```sh
-go build \
-  -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.DefaultConfigPath=/etc/tgnotifier.yml'" \
-   github.com/religiosa1/tgnotifier/cmd/tgnotifier
-```
-
 ### App config
 
 Configuration of the app can be provided as a yaml config file, or through
@@ -226,15 +210,74 @@ Supported environmental variables are:
 - BOT_ADDR address on which we're launching the http server, defaults to "localhost:6000"`
 - BOT_CONFIG_PATH path to configuration file
 
-Upon launch, service tries to load the configuration file specified in the
-`BOT_CONFIG_PATH` environment variable, or `./config.yml` if it's empty.
-You can override which file to load calling it with the flag:
+Upon launch, the service tries to load configuration in the following priority order:
+
+1. Config file explicitly specified via the `--config` flag:
+
+   ```sh
+   tgnotifier --config /path/to/config.yml
+   ```
+
+2. Config file path specified in the `BOT_CONFIG_PATH` environment variable
+
+3. User-specific config file (platform-dependent):
+
+   - **Unix/Linux/macOS**: `$XDG_CONFIG_HOME/tgnotifier/config.yml` (or `~/.config/tgnotifier/config.yml` if `XDG_CONFIG_HOME` is not set)
+   - **Windows**: `%APPDATA%\tgnotifier\config.yml`
+
+4. Global config file (platform-dependent):
+
+   - **Unix/Linux/macOS**: `/etc/tgnotifier.yml`
+   - **Windows**: `%PROGRAMDATA%\tgnotifier\config.yml`
+
+5. If no config file is found, the service will attempt to load all configuration from environment variables.
+
+This allows you to have a system-wide configuration in the global location, while individual users can override settings with their own user-specific config files.
+
+#### Overriding default config paths with ldflags during the build
+
+You can use ldflags to override the default config file locations at build time.
+
+**Available variables:**
+
+in `github.com/religiosa1/tgnotifier/internal/config`:
+
+- `UserConfigPath` - User-specific config path
+- `GlobalConfigPath` - Global/system-wide config path
+
+**For Unix/Linux/macOS:**
+
+Using taskfile's variables:
 
 ```sh
-tgnotifier --config foo.yml
+# Notice the double slash before the variable to escape variable expansion inside of taskfile
+task build USER_CONFIG="\\${XDG_CONFIG_HOME}/tgnotifier/config.yml" GLOBAL_CONFIG="/etc/tgnotifier.yml"
 ```
 
-Alternatively, you can set all of the configuration with environment variables.
+Or manually:
+
+```sh
+go build \
+  -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.UserConfigPath=\${XDG_CONFIG_HOME}/tgnotifier/config.yml' \
+            -X 'github.com/religiosa1/tgnotifier/internal/config.GlobalConfigPath=/etc/tgnotifier.yml'" \
+  github.com/religiosa1/tgnotifier/cmd/tgnotifier
+```
+
+**For Windows:**
+
+```sh
+go build \
+  -ldflags="-X 'github.com/religiosa1/tgnotifier/internal/config.UserConfigPath=\${APPDATA}\\tgnotifier\\config.yml' \
+            -X 'github.com/religiosa1/tgnotifier/internal/config.GlobalConfigPath=\${PROGRAMDATA}\\tgnotifier\\config.yml'" \
+  github.com/religiosa1/tgnotifier/cmd/tgnotifier
+```
+
+**Environment variable expansion:**
+
+The config paths support environment variable expansion at runtime using the `${VAR}` or `$VAR` syntax. Any environment variable can be used as a placeholder:
+
+- **Unix/Linux/macOS examples**: `${XDG_CONFIG_HOME}`, `${HOME}`, `${USER}`, etc.
+- **Windows examples**: `${APPDATA}`, `${PROGRAMDATA}`, `${USERPROFILE}`, etc.
 
 ### API KEY
 

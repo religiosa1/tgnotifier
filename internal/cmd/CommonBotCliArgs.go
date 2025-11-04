@@ -12,7 +12,7 @@ type CommandInterface interface {
 }
 
 type CommonBotCliArgs struct {
-	Config     string   `placeholder:"${default_config_path}" short:"c" help:"Configuration file name ($BOT_CONFIG_PATH)"`
+	Config     string   `short:"c" help:"Configuration file path ($BOT_CONFIG_PATH)"`
 	Recipients []string `short:"r" help:"Message recipients, comma separated (defaults to value from config or $BOT_RECIPIENTS)"`
 	BotToken   string   `yaml:"bot_token" help:"Your bot token as given by botfather (defaults to value from config or $BOT_TOKEN)"`
 }
