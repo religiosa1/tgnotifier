@@ -7,8 +7,9 @@ import (
 )
 
 type mockBot struct {
-	Err           error
-	GetMeResponse tgnotifier.GetMeResponse
+	Err                error
+	GetMeResponse      tgnotifier.GetMeResponse
+	LastCallRecipients []string
 }
 
 func (b *mockBot) SendMessage(message string, parseMode tgnotifier.ParseMode, recipients []string) error {
@@ -21,6 +22,7 @@ func (b *mockBot) SendMessageWithContext(
 	parseMode tgnotifier.ParseMode,
 	recipients []string,
 ) error {
+	b.LastCallRecipients = recipients
 	return b.Err
 }
 

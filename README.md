@@ -24,7 +24,12 @@ telegram's interface called BotFather, as described in their
 
 Besides that, you need to know telegram id's of users to whom you want to send
 the notifications. You can do that via
-the [userinfobot](https://t.me/userinfobot).
+the [userinfobot](https://t.me/userinfobot) or alternatively by by sending a
+message to your bot DMs and accessing the following url:
+`https://api.telegram.org/bot<YOUR BOT TOKEN HERE>/getUpdates`
+
+You user id will be in `result[0].message.from.id` field of response (not to be
+confused with chat id: `result[0].message.chat.id`)
 
 Before you can receive notifications from the bot, you must initiate the
 communication with it. Go to it's page (through the username, provided by the
@@ -134,7 +139,8 @@ parsed:
 ```jsonc
 {
 	"message": "Your message",
-	"parse_mode": "MarkdownV2" // OPTIONAL, defaults to MarkdownV2
+	"parse_mode": "MarkdownV2", // OPTIONAL, defaults to MarkdownV2
+	"recipients": ["userid1"] // OPTIONAL, defaults to recipients from config
 }
 ```
 
@@ -148,6 +154,13 @@ Please note, that the message should conform to the telegram formatting specs,
 as described in [docs](https://core.telegram.org/bots/api#formatting-options)
 for example all of the following symbols must be escaped with a '\\' character:
 `` _*[]()~`>#+-=|{}.! ``
+
+`recipients` field in the request payload allows to override the default recipient
+list provided in the config. If default recipients list is not provided in the
+config, then `recipients` field in the payload is required, and attempts to
+provide a payload without it or with an empty array will result in 400 error.
+
+Empty recipient array in the payload will always lead to 400 error.
 
 #### Healthcheck request
 
@@ -206,7 +219,7 @@ available configuration values.
 Supported environmental variables are:
 
 - BOT_TOKEN bot token as provided by BotFather
-- BOT_RECIPIENTS list of recipients' telegram Ids, separated by comma
+- BOT_RECIPIENTS list of default recipients' telegram Ids, separated by comma
 - BOT_API_KEY your API Key (see bellow)
 - BOT_LOG_LEVEL verbosity level of logs, possible values are 'debug', 'info', 'warn', and 'error'
 - BOT_LOG_TYPE controls the logger output, possible values are "text" and "json"

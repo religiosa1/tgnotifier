@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Ability to launch service or cli, without specifying recipients list in
+  the config; `recipients` field in the config is now the default recipients
+  list to use, if nothing is specified in the request payload or cli flags.
+
 ### Fixed
 
 - missing Content-Type HTTP headers in the POST / response

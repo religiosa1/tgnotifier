@@ -31,8 +31,5 @@ func (cmd *CommonBotCliArgs) ValidatePostMerge() error {
 	if cmd.BotToken == "" {
 		return errors.New("bot_token must be provided through the CLI, config or environment variable")
 	}
-	if len(cmd.Recipients) == 0 {
-		return errors.New("recipients list must be provided through the CLI, config or environment variable")
-	}
 	return nil
 }

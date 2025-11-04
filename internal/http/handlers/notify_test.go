@@ -26,8 +26,9 @@ func trimRespBody(resp *httptest.ResponseRecorder) string {
 }
 
 func TestNotify_Success(t *testing.T) {
+	mock := mockBot{}
 	handler := handlers.Notify{
-		Bot:        &mockBot{},
+		Bot:        &mock,
 		Recipients: []string{"user1"},
 	}
 
@@ -39,6 +40,90 @@ func TestNotify_Success(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.Code)
 	expectedBody := `{"success":true}`
 	require.Equal(t, expectedBody, trimRespBody(resp))
+	require.Equal(t, []string{"user1"}, mock.LastCallRecipients)
+}
+
+func TestNotify_RecipientsThroughPayload(t *testing.T) {
+	mock := mockBot{}
+	handler := handlers.Notify{
+		Bot:        &mock,
+		Recipients: []string{},
+	}
+
+	body := `{"message": "hello", "parse_mode": "Markdown", "recipients":["payload_user"]}`
+	req, resp := makeRequest(body)
+
+	handler.ServeHTTP(resp, req)
+
+	require.Equal(t, http.StatusOK, resp.Code)
+	expectedBody := `{"success":true}`
+	require.Equal(t, expectedBody, trimRespBody(resp))
+	require.Equal(t, []string{"payload_user"}, mock.LastCallRecipients)
+}
+
+func TestNotify_RecipientsThroughPayloadOverrideDefault(t *testing.T) {
+	mock := mockBot{}
+	handler := handlers.Notify{
+		Bot:        &mock,
+		Recipients: []string{"user1"},
+	}
+
+	body := `{"message": "hello", "parse_mode": "Markdown", "recipients":["user2"]}`
+	req, resp := makeRequest(body)
+
+	handler.ServeHTTP(resp, req)
+
+	require.Equal(t, http.StatusOK, resp.Code)
+	expectedBody := `{"success":true}`
+	require.Equal(t, expectedBody, trimRespBody(resp))
+	require.Equal(t, []string{"user2"}, mock.LastCallRecipients)
+}
+
+func TestNotify_NoRecipients(t *testing.T) {
+	cases := []struct {
+		name    string
+		payload string
+	}{
+		{"no recipients", `{"message": "hello", "parse_mode": "Markdown"}`},
+		{"empty array", `{"message": "hello", "parse_mode": "Markdown", "recipients": []}`},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := mockBot{}
+			handler := handlers.Notify{
+				Bot:        &mock,
+				Recipients: []string{},
+			}
+
+			req, resp := makeRequest(tt.payload)
+
+			handler.ServeHTTP(resp, req)
+
+			require.Equal(t, http.StatusBadRequest, resp.Code)
+			expectedBody := `{"success":false,"error":"Recipients list not provided in the request, and default recipient is not set in the config"}`
+			require.Equal(t, expectedBody, trimRespBody(resp))
+			require.Empty(t, mock.LastCallRecipients, "Expected no call to bot")
+		})
+	}
+}
+
+func TestNotify_EmptyRecipientsListOverridesDefaultAndErrorsOut(t *testing.T) {
+	mock := mockBot{}
+	handler := handlers.Notify{
+		Bot:        &mock,
+		Recipients: []string{"user1"},
+	}
+
+	body := `{"message": "hello", "parse_mode": "Markdown", "recipients": []}`
+
+	req, resp := makeRequest(body)
+
+	handler.ServeHTTP(resp, req)
+
+	require.Equal(t, http.StatusBadRequest, resp.Code)
+	expectedBody := `{"success":false,"error":"Recipients list not provided in the request, and default recipient is not set in the config"}`
+	require.Equal(t, expectedBody, trimRespBody(resp))
+	require.Empty(t, mock.LastCallRecipients, "Expected no call to bot")
 }
 
 func TestNotify_MissingBody(t *testing.T) {

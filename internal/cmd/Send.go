@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +36,9 @@ func (cmd *Send) Run() error {
 		return err
 	}
 	cmd.MergeConfig(cfg)
+	if len(cmd.Recipients) == 0 {
+		return errors.New("recipients list must be provided through the CLI, config or environment variable")
+	}
 	// we're not validating the Send struct, only common args, allowing bot to error out
 	if err := cmd.ValidatePostMerge(); err != nil {
 		return err

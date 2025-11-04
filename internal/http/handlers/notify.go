@@ -12,10 +12,11 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
-// TODO add optional recipients list to payload
 type RequestPayload struct {
 	Message   string               `json:"message"`
 	ParseMode tgnotifier.ParseMode `json:"parse_mode"`
+	// recipients override (uses config values, if not provided)
+	Recipients []string `json:"recipients"`
 }
 
 type Notify struct {
@@ -49,7 +50,20 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeResponse(http.StatusBadRequest, resp)
 		return
 	}
-	if err := h.Bot.SendMessageWithContext(r.Context(), payload.Message, payload.ParseMode, h.Recipients); err != nil {
+
+	var recipients []string
+	if payload.Recipients != nil {
+		recipients = payload.Recipients
+	} else {
+		recipients = h.Recipients
+	}
+	if len(recipients) == 0 {
+		resp.Error = "Recipients list not provided in the request, and default recipient is not set in the config"
+		writeResponse(400, resp)
+		return
+	}
+
+	if err := h.Bot.SendMessageWithContext(r.Context(), payload.Message, payload.ParseMode, recipients); err != nil {
 		logger.Error("Error sending the notification", slog.Any("error", err))
 		resp.Error = err.Error()
 		writeResponse(mapSendMessageErrorToHttpCode(err), resp)
