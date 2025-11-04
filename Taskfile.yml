@@ -56,12 +56,17 @@ tasks:
         --build-arg VCS_REF={{ .VCS_REF }} \
         -t ghcr.io/religiosa1/tgnotifier:{{ .TAG }} \
         -t tgnotifier:{{ .TAG }} \
+        {{if .VERSION}}-t ghcr.io/religiosa1/tgnotifier:{{ .VERSION }} \
+        -t tgnotifier:{{ .VERSION }}{{end}} \
         .
   docker-push:
     deps: [docker-build]
     vars:
+      VERSION: '{{ default "" .VERSION }}'
       TAG: '{{ default "latest" .TAG }}'
-    cmd: docker push ghcr.io/religiosa1/tgnotifier:{{ .TAG }}
+    cmds:
+      - docker push ghcr.io/religiosa1/tgnotifier:{{ .TAG }}
+      - '{{if .VERSION}}docker push ghcr.io/religiosa1/tgnotifier:{{ .VERSION }}{{end}}'
 
   test:
     cmds:
