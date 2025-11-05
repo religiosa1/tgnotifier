@@ -55,7 +55,7 @@ It is strongly encouraged to do that in a config file only available for you to
 read, so you don't expose your tokens and keys through the environment variables
 for the whole system.
 
-See instructions on [Docker image](#docker-image) launch bellow
+See instructions on [Docker image](#docker-image) launch below.
 
 ## Usage
 
@@ -77,6 +77,8 @@ long-running-foo && tgnotifier send "foo is done!" || tgnotifier send "failed!"
 # any shell magic you want:
 long-running-foo; status=$?; tgnotifier "foo is done with exit status $status"
 ```
+
+To get the list of available commands run `tgnotifier --help`.
 
 ### As a go library
 
