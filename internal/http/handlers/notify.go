@@ -66,15 +66,15 @@ func (h Notify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := h.Bot.SendMessageWithContext(r.Context(), payload.Message, payload.ParseMode, recipients); err != nil {
 		logger.Error("Error sending the notification", slog.Any("error", err))
 		resp.Error = err.Error()
-		writeResponse(mapSendMessageErrorToHttpCode(err), resp)
+		writeResponse(mapSendMessageErrorToHTTPCode(err), resp)
 		return
 	}
 	resp.Success = true
 	writeResponse(http.StatusOK, resp)
 }
 
-func mapSendMessageErrorToHttpCode(err error) int {
-	var apiError tgnotifier.TgApiError
+func mapSendMessageErrorToHTTPCode(err error) int {
+	var apiError tgnotifier.TgAPIError
 	if errors.As(err, &apiError) {
 		return http.StatusBadRequest
 	}

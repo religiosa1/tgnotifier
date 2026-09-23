@@ -19,7 +19,7 @@ type Config struct {
 	Recipients []string `yaml:"recipients" env:"BOT_RECIPIENTS"`
 	Address    string   `yaml:"address" env:"BOT_ADDR" env-default:"localhost:6000"`
 	// API key, passed in 'x-api-key' to authorize requests to the app
-	ApiKey string `yaml:"api_key" env:"BOT_API_KEY"`
+	APIKey string `yaml:"api_key" env:"BOT_API_KEY"`
 }
 
 func Load(configPath string) (Config, error) {

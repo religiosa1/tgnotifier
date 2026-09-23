@@ -11,7 +11,8 @@ import (
 func TestServe_parseFlags(t *testing.T) {
 	var cmd cmd.Serve
 	p := newCliParserWithConfig(t, &cmd, test.MockConfig)
-	_, err := p.Parse([]string{"-r", "1,2,3", "-c", "test-conf", "--bot-token", "test-token",
+	_, err := p.Parse([]string{
+		"-r", "1,2,3", "-c", "test-conf", "--bot-token", "test-token",
 		"--log-type", "text",
 		"--log-level", "warn",
 		"--api-key", "qwerty",
@@ -25,7 +26,7 @@ func TestServe_parseFlags(t *testing.T) {
 	assert.Equal(t, "test-token", cmd.BotToken)
 	assert.Equal(t, "text", cmd.LogType)
 	assert.Equal(t, "warn", cmd.LogLevel)
-	assert.Equal(t, "qwerty", cmd.ApiKey)
+	assert.Equal(t, "qwerty", cmd.APIKey)
 	assert.Equal(t, "127.5.3.1:3000", cmd.Address)
 }
 
@@ -40,7 +41,7 @@ func TestServe_parseWithDefaultsFromConfig(t *testing.T) {
 	assert.Equal(t, test.MockConfig.BotToken, cmd.BotToken)
 	assert.Equal(t, test.MockConfig.LogType, cmd.LogType)
 	assert.Equal(t, test.MockConfig.LogLevel, cmd.LogLevel)
-	assert.Equal(t, test.MockConfig.ApiKey, cmd.ApiKey)
+	assert.Equal(t, test.MockConfig.APIKey, cmd.APIKey)
 	assert.Equal(t, test.MockConfig.Address, cmd.Address)
 }
 
@@ -63,7 +64,7 @@ func TestServe_parseEnvOverridesDefaults(t *testing.T) {
 	assert.Equal(t, "test-token", cmd.BotToken)
 	assert.Equal(t, "text", cmd.LogType)
 	assert.Equal(t, "warn", cmd.LogLevel)
-	assert.Equal(t, "test-api-key", cmd.ApiKey)
+	assert.Equal(t, "test-api-key", cmd.APIKey)
 	assert.Equal(t, "test-addr", cmd.Address)
 }
 
@@ -85,6 +86,6 @@ func TestServe_parsePriorityFlagEnvConfig(t *testing.T) {
 	assert.Equal(t, "super-token", cmd.BotToken)             // flag overrides value with env
 	assert.Equal(t, "text", cmd.LogType)                     // env overrides value without flag
 	assert.Equal(t, test.MockConfig.LogLevel, cmd.LogLevel)  // config is still the default
-	assert.Equal(t, test.MockConfig.ApiKey, cmd.ApiKey)
+	assert.Equal(t, test.MockConfig.APIKey, cmd.APIKey)
 	assert.Equal(t, test.MockConfig.Address, cmd.Address)
 }

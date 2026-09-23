@@ -10,7 +10,7 @@ import (
 	"github.com/religiosa1/tgnotifier/internal/http/models"
 )
 
-func WithApiKeyAuth(configKey string) Middleware {
+func WithAPIKeyAuth(configKey string) Middleware {
 	if configKey == "" {
 		return noopHandler
 	}
@@ -68,7 +68,6 @@ func newConstantTimeComparer(targetValue string) constantTimeComparer {
 func (c constantTimeComparer) Eq(value string) bool {
 	valueHash := sha256.Sum256([]byte(value))
 	return subtle.ConstantTimeCompare(c.targetValueHash[:], valueHash[:]) == 1
-
 }
 
 func noopHandler(next http.Handler) http.Handler {

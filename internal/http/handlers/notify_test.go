@@ -173,8 +173,8 @@ func TestNotify_SendMessageFails_Internal(t *testing.T) {
 	require.Equal(t, expectedBody, trimRespBody(resp))
 }
 
-func TestNotify_TgApiError_BadRequest(t *testing.T) {
-	err := tgnotifier.TgApiError{
+func TestNotify_TgAPIError_BadRequest(t *testing.T) {
+	err := tgnotifier.TgAPIError{
 		TgCode:      100,
 		Method:      "sendMessage",
 		Description: "bad token",

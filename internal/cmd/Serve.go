@@ -25,7 +25,7 @@ type Serve struct {
 	Address          string `arg:"" optional:"" env:"BOT_ADDR" placeholder:"localhost:6000" help:"HTTP server listening address ($BOT_ADDR)"`
 	LogType          string `placeholder:"text" help:"Logger output type ($BOT_LOG_TYPE)"`
 	LogLevel         string `placeholder:"info" help:"Minimum logging level ($BOT_LOG_LEVEL)"`
-	ApiKey           string `help:"API key, passed in 'x-api-key' header to authorize incoming requests ($BOT_API_KEY)"`
+	APIKey           string `help:"API key, passed in 'x-api-key' header to authorize incoming requests ($BOT_API_KEY)"`
 }
 
 func (cmd *Serve) MergeConfig(cfg config.Config) {
@@ -33,8 +33,9 @@ func (cmd *Serve) MergeConfig(cfg config.Config) {
 	MergeValueInto(&cmd.LogType, cfg.LogType)
 	MergeValueInto(&cmd.LogLevel, cfg.LogLevel)
 	MergeValueInto(&cmd.Address, cfg.Address)
-	MergeValueInto(&cmd.ApiKey, cfg.ApiKey)
+	MergeValueInto(&cmd.APIKey, cfg.APIKey)
 }
+
 func MergeValueInto[T comparable](target *T, source T) {
 	var zero T
 	if *target == zero {
@@ -85,7 +86,7 @@ func (cmd *Serve) Run() error {
 		mux := http.NewServeMux()
 		middlewares := middleware.Chain(
 			middleware.WithLogger(logger),
-			middleware.WithApiKeyAuth(cmd.ApiKey),
+			middleware.WithAPIKeyAuth(cmd.APIKey),
 		)
 		mux.Handle("GET /", middlewares(handlers.Healthcheck{Bot: bot}))
 		mux.Handle("POST /", middlewares(handlers.Notify{Bot: bot, Recipients: cmd.Recipients}))
@@ -108,14 +109,14 @@ func (cmd *Serve) Run() error {
 
 func setupLogger(logType string, logLevel string) *slog.Logger {
 	var logger *slog.Logger
-	var programLevel = new(slog.LevelVar)
+	programLevel := new(slog.LevelVar)
 	programLevel.Set(strLogLevelToEnumValue(logLevel))
 	handlerOpts := &slog.HandlerOptions{Level: programLevel}
 	switch logType {
 	case "text":
 		logger = slog.New(slog.NewTextHandler(os.Stdout, handlerOpts))
 	case "json":
-		logger = slog.New((slog.NewJSONHandler(os.Stdout, handlerOpts)))
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, handlerOpts))
 	default:
 		log.Fatalf("Unknown logger type %s", logType)
 	}

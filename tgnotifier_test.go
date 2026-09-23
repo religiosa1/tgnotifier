@@ -22,7 +22,7 @@ func TestSendMessageWithContext_Success(t *testing.T) {
 
 	url := getMockEndpoint("sendMessage")
 	httpmock.RegisterResponder("POST", url,
-		httpmock.NewJsonResponderOrPanic(200, map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"ok": true,
 		}),
 	)
@@ -73,7 +73,7 @@ func TestSendMessageWithContext_HandlesNon200(t *testing.T) {
 	bot := newTestBot(t)
 
 	httpmock.RegisterResponder("POST", getMockEndpoint("sendMessage"),
-		httpmock.NewJsonResponderOrPanic(200, map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"ok":          false,
 			"error_code":  403,
 			"description": "Forbidden",
@@ -81,7 +81,7 @@ func TestSendMessageWithContext_HandlesNon200(t *testing.T) {
 
 	err := bot.SendMessageWithContext(context.Background(), "Hello", "", []string{"123"})
 	assert.ErrorContains(t, err, "Forbidden")
-	var tgErr tgnotifier.TgApiError
+	var tgErr tgnotifier.TgAPIError
 	assert.ErrorAs(t, err, &tgErr)
 	assert.Equal(t, 403, tgErr.TgCode)
 }
@@ -103,9 +103,9 @@ func TestGetMeWithContext_Success(t *testing.T) {
 	bot := newTestBot(t)
 
 	httpmock.RegisterResponder("GET", getMockEndpoint("getMe"),
-		httpmock.NewJsonResponderOrPanic(200, map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"ok": true,
-			"result": map[string]interface{}{
+			"result": map[string]any{
 				"id":         123,
 				"is_bot":     true,
 				"first_name": "MyBot",
@@ -114,7 +114,7 @@ func TestGetMeWithContext_Success(t *testing.T) {
 
 	resp, err := bot.GetMeWithContext(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, int64(123), resp.Id)
+	assert.Equal(t, int64(123), resp.ID)
 	assert.Equal(t, "MyBot", resp.FirstName)
 	assert.True(t, resp.IsBot)
 }
@@ -143,14 +143,14 @@ func TestGetMeWithContext_NotOKResponse(t *testing.T) {
 	bot := newTestBot(t)
 
 	httpmock.RegisterResponder("GET", getMockEndpoint("getMe"),
-		httpmock.NewJsonResponderOrPanic(200, map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"ok":          false,
 			"error_code":  401,
 			"description": "unauthorized",
 		}))
 
 	_, err := bot.GetMeWithContext(context.Background())
-	var tgErr tgnotifier.TgApiError
+	var tgErr tgnotifier.TgAPIError
 	assert.ErrorAs(t, err, &tgErr)
 	assert.Equal(t, "unauthorized", tgErr.Description)
 }
@@ -159,9 +159,9 @@ func TestGetMeWithContext_NotABot(t *testing.T) {
 	bot := newTestBot(t)
 
 	httpmock.RegisterResponder("GET", getMockEndpoint("getMe"),
-		httpmock.NewJsonResponderOrPanic(200, map[string]interface{}{
+		httpmock.NewJsonResponderOrPanic(200, map[string]any{
 			"ok": true,
-			"result": map[string]interface{}{
+			"result": map[string]any{
 				"is_bot": false,
 			},
 		}))

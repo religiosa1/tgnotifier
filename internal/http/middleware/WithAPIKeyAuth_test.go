@@ -16,7 +16,7 @@ const validKey = "superSecretApiKey"
 func testHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"ok":true}`))
+		_, _ = w.Write([]byte(`{"ok":true}`))
 	})
 }
 
@@ -30,8 +30,8 @@ func parseResponse(t *testing.T, rr *httptest.ResponseRecorder) models.ResponseP
 	return payload
 }
 
-func TestApiKeyAuth_Success_Header(t *testing.T) {
-	mw := middleware.WithApiKeyAuth(validKey)
+func TestAPIKeyAuth_Success_Header(t *testing.T) {
+	mw := middleware.WithAPIKeyAuth(validKey)
 	handler := mw(testHandler())
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -45,8 +45,8 @@ func TestApiKeyAuth_Success_Header(t *testing.T) {
 	}
 }
 
-func TestApiKeyAuth_Success_Cookie(t *testing.T) {
-	mw := middleware.WithApiKeyAuth(validKey)
+func TestAPIKeyAuth_Success_Cookie(t *testing.T) {
+	mw := middleware.WithAPIKeyAuth(validKey)
 	handler := mw(testHandler())
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -60,8 +60,8 @@ func TestApiKeyAuth_Success_Cookie(t *testing.T) {
 	}
 }
 
-func TestApiKeyAuth_MissingKey(t *testing.T) {
-	mw := middleware.WithApiKeyAuth(validKey)
+func TestAPIKeyAuth_MissingKey(t *testing.T) {
+	mw := middleware.WithAPIKeyAuth(validKey)
 	handler := mw(testHandler())
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -79,8 +79,8 @@ func TestApiKeyAuth_MissingKey(t *testing.T) {
 	}
 }
 
-func TestApiKeyAuth_InvalidKey(t *testing.T) {
-	mw := middleware.WithApiKeyAuth(validKey)
+func TestAPIKeyAuth_InvalidKey(t *testing.T) {
+	mw := middleware.WithAPIKeyAuth(validKey)
 	handler := mw(testHandler())
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -99,8 +99,8 @@ func TestApiKeyAuth_InvalidKey(t *testing.T) {
 	}
 }
 
-func TestApiKeyAuth_Disabled(t *testing.T) {
-	mw := middleware.WithApiKeyAuth("")
+func TestAPIKeyAuth_Disabled(t *testing.T) {
+	mw := middleware.WithAPIKeyAuth("")
 	handler := mw(testHandler())
 
 	req := httptest.NewRequest("GET", "/", nil)

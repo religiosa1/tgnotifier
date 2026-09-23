@@ -23,13 +23,13 @@ func (cmd *Version) Run() error {
 	fmt.Println()
 	fmt.Println("Config paths:")
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(w, " User:\t%s\n", config.UserConfigPath)
-	fmt.Fprintf(w, " Global:\t%s\n", config.GlobalConfigPath)
-	w.Flush()
+	_, _ = fmt.Fprintf(w, " User:\t%s\n", config.UserConfigPath)
+	_, _ = fmt.Fprintf(w, " Global:\t%s\n", config.GlobalConfigPath)
+	_ = w.Flush()
 	return nil
 }
 
-func (v Version) GetVersion() string {
+func (cmd Version) GetVersion() string {
 	// using version from ldflags first if defined
 	if version != "" {
 		return version

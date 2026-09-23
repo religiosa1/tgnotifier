@@ -18,7 +18,9 @@ func CreateConfigFile(t *testing.T, cfg config.Config) string {
 	if err != nil {
 		t.Fatalf("failed to open tmp file: %v", err)
 	}
-	defer cfgFile.Close()
+	defer func() {
+		_ = cfgFile.Close()
+	}()
 	err = yaml.NewEncoder(cfgFile).Encode(cfg)
 	if err != nil {
 		t.Fatalf("failed to write config file: %v", err)
@@ -30,7 +32,7 @@ func CreateConfigFile(t *testing.T, cfg config.Config) string {
 var MockConfig = config.Config{
 	Address:    "127.1.1.1:3333",
 	BotToken:   "1234567890:dY8ityIPogXaUqVrgH62AANw1AwFMn4EbMC",
-	ApiKey:     "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEAD",
+	APIKey:     "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEAD",
 	LogLevel:   "error",
 	LogType:    "json",
 	Recipients: []string{"227039625"},

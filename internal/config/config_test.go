@@ -10,7 +10,6 @@ import (
 )
 
 func TestLoad_ConfigFromFile(t *testing.T) {
-
 	cfgName := test.CreateConfigFile(t, test.MockConfig)
 	cfg, err := config.Load(cfgName)
 	require.NoError(t, err)
@@ -20,7 +19,7 @@ func TestLoad_ConfigFromFile(t *testing.T) {
 	assert.Equal(t, test.MockConfig.BotToken, cfg.BotToken)
 	assert.Equal(t, test.MockConfig.Recipients, cfg.Recipients)
 	assert.Equal(t, test.MockConfig.Address, cfg.Address)
-	assert.Equal(t, test.MockConfig.ApiKey, cfg.ApiKey)
+	assert.Equal(t, test.MockConfig.APIKey, cfg.APIKey)
 }
 
 func TestLoad_ConfigFromEnv(t *testing.T) {
@@ -39,7 +38,7 @@ func TestLoad_ConfigFromEnv(t *testing.T) {
 	assert.Equal(t, "env-token", cfg.BotToken)
 	assert.Equal(t, []string{"111", "222"}, cfg.Recipients)
 	assert.Equal(t, "0.0.0.0:8080", cfg.Address)
-	assert.Equal(t, "env-secret", cfg.ApiKey)
+	assert.Equal(t, "env-secret", cfg.APIKey)
 }
 
 func TestLoad_MissingExplicitFile(t *testing.T) {
@@ -59,7 +58,7 @@ func TestLoad_MissingImplicitFile(t *testing.T) {
 	assert.Equal(t, "", cfg.BotToken)
 	assert.Empty(t, cfg.Recipients)
 	assert.Equal(t, "localhost:6000", cfg.Address)
-	assert.Equal(t, "", cfg.ApiKey)
+	assert.Equal(t, "", cfg.APIKey)
 }
 
 func TestLoad_EnvOverridesConfig(t *testing.T) {

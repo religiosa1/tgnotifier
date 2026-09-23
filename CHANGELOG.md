@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- BREAKING: TgApiError type renamed to TgAPIError
+- BREAKING: GetMeResponse.Id renamed to ID
+
 ### Added
 
 - Explicit support for plain/no parse mode

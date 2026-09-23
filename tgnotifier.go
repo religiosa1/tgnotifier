@@ -51,14 +51,14 @@ var (
 	ErrNotABot          = errors.New("we're not a bot according to getMe")
 )
 
-// TgApiError represents an error returned by the Telegram Bot API.
-type TgApiError struct {
+// TgAPIError represents an error returned by the Telegram Bot API.
+type TgAPIError struct {
 	TgCode      int
 	Method      string
 	Description string
 }
 
-func (e TgApiError) Error() string {
+func (e TgAPIError) Error() string {
 	return fmt.Sprintf("error during the TG API call to '%s' (%d): %s", e.Method, e.TgCode, e.Description)
 }
 
@@ -100,7 +100,7 @@ func (bot *Bot) SendMessage(message string, parseMode ParseMode, recipients []st
 	return bot.SendMessageWithContext(context.Background(), message, parseMode, recipients)
 }
 
-// SendMessage sends TG message in a given parseMode to one or more recipients
+// SendMessageWithContext sends TG message in a given parseMode to one or more recipients
 //
 // See: https://core.telegram.org/bots/api#sendmessage
 func (bot *Bot) SendMessageWithContext(
@@ -131,8 +131,8 @@ func (bot *Bot) SendMessageWithContext(
 	var wg sync.WaitGroup
 	wg.Add(len(recipients))
 
-	for _, chatId := range recipients {
-		go func(chatId string) {
+	for _, chatID := range recipients {
+		go func() {
 			defer wg.Done()
 
 			select {
@@ -143,14 +143,14 @@ func (bot *Bot) SendMessageWithContext(
 			}
 
 			payload := sendMessagePayload{
-				ChatId:    chatId,
+				ChatID:    chatID,
 				Text:      message,
 				ParseMode: parseMode,
 			}
 			if err := bot.sendMessage(ctx, payload); err != nil {
 				errCh <- err
 			}
-		}(chatId)
+		}()
 	}
 	wg.Wait()
 	close(errCh)
@@ -171,21 +171,21 @@ type botResponse[T any] struct {
 
 // https://core.telegram.org/bots/api#sendmessage
 type sendMessagePayload struct {
-	ChatId    string `json:"chat_id"`
+	ChatID    string `json:"chat_id"`
 	Text      string `json:"text"`
 	ParseMode string `json:"parse_mode,omitempty"`
 }
 
 func (bot *Bot) sendMessage(ctx context.Context, payload sendMessagePayload) error {
 	const method string = "sendMessage"
-	endpointUrl := bot.methodUrl(method)
+	endpointURL := bot.methodURL(method)
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("error encoding the sendMessage body: %w", err)
 	}
 	bodyReader := bytes.NewReader(body)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", endpointUrl, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, "POST", endpointURL, bodyReader)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -195,7 +195,9 @@ func (bot *Bot) sendMessage(ctx context.Context, payload sendMessagePayload) err
 	if err != nil {
 		return fmt.Errorf("error sending request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	var sendMessageResponse botResponse[struct{}]
 	if err := json.NewDecoder(resp.Body).Decode(&sendMessageResponse); err != nil {
@@ -203,7 +205,7 @@ func (bot *Bot) sendMessage(ctx context.Context, payload sendMessagePayload) err
 	}
 
 	if !sendMessageResponse.Ok {
-		return TgApiError{sendMessageResponse.ErrorCode, method, sendMessageResponse.Description}
+		return TgAPIError{sendMessageResponse.ErrorCode, method, sendMessageResponse.Description}
 	}
 	return nil
 }
@@ -214,7 +216,7 @@ func (bot *Bot) sendMessage(ctx context.Context, payload sendMessagePayload) err
 //
 // See: https://core.telegram.org/bots/api#user
 type GetMeResponse struct {
-	Id        int64  `json:"id"`
+	ID        int64  `json:"id"`
 	IsBot     bool   `json:"is_bot"`
 	FirstName string `json:"first_name"`
 	// optionals:
@@ -243,8 +245,8 @@ func (bot *Bot) GetMeWithContext(ctx context.Context) (GetMeResponse, error) {
 	var getMeResp botResponse[GetMeResponse]
 
 	const method string = "getMe"
-	endpointUrl := bot.methodUrl(method)
-	req, err := http.NewRequestWithContext(ctx, "GET", endpointUrl, nil)
+	endpointURL := bot.methodURL(method)
+	req, err := http.NewRequestWithContext(ctx, "GET", endpointURL, nil)
 	if err != nil {
 		return getMeResp.Result, fmt.Errorf("error creating bot request: %w", err)
 	}
@@ -253,13 +255,15 @@ func (bot *Bot) GetMeWithContext(ctx context.Context) (GetMeResponse, error) {
 	if err != nil {
 		return getMeResp.Result, fmt.Errorf("error sending bot request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if err := json.NewDecoder(resp.Body).Decode(&getMeResp); err != nil {
 		return getMeResp.Result, fmt.Errorf("error reading response body: %w", err)
 	}
 	if !getMeResp.Ok {
-		return getMeResp.Result, TgApiError{getMeResp.ErrorCode, method, getMeResp.Description}
+		return getMeResp.Result, TgAPIError{getMeResp.ErrorCode, method, getMeResp.Description}
 	}
 	if !getMeResp.Result.IsBot {
 		return getMeResp.Result, ErrNotABot
@@ -269,7 +273,7 @@ func (bot *Bot) GetMeWithContext(ctx context.Context) (GetMeResponse, error) {
 
 //==============================================================================
 
-func (bot *Bot) methodUrl(method string) string {
+func (bot *Bot) methodURL(method string) string {
 	escapedToken := url.PathEscape(bot.token)
 	escapedMethod := url.PathEscape(method)
 	return fmt.Sprintf("https://api.telegram.org/bot%s/%s", escapedToken, escapedMethod)
