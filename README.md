@@ -95,7 +95,7 @@ func main() {
     log.Fatal(err)
   }
   recipientsList := []string {"recipientTgId"}
-  err := bot.SendMessage("Hello world!", recipientsList)
+  err = bot.SendMessage("Hello world!", tgnotifier.ParseModeMD, recipientsList)
   if err != nil {
     log.Fatal(err)
   }
@@ -143,21 +143,22 @@ parsed:
 ```jsonc
 {
 	"message": "Your message",
-	"parse_mode": "MarkdownV2", // OPTIONAL, defaults to MarkdownV2
+	"parse_mode": "MarkdownV2", // OPTIONAL, defaults to plain/no formatting
 	"recipients": ["userid1"] // OPTIONAL, defaults to recipients from config
 }
 ```
 
 Supported `parse_mode` values are:
 
-- MarkdownV2 (default)
+- omitted or `""`: plain text, no formatting (default)
+- MarkdownV2
 - HTML
 - Markdown
 
 Please note, that the message should conform to the telegram formatting specs,
 as described in [docs](https://core.telegram.org/bots/api#formatting-options)
 for example all of the following symbols must be escaped with a '\\' character:
-`` _*[]()~`>#+-=|{}.! ``
+``_*[]()~`>#+-=|{}.!``
 
 `recipients` field in the request payload allows to override the default recipient
 list provided in the config. If default recipients list is not provided in the

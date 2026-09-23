@@ -13,7 +13,7 @@ import (
 
 type Send struct {
 	CommonBotCliArgs `embed:""`
-	ParseMode        string `short:"m" placeholder:"MarkdownV2" help:"Message parse mode"`
+	ParseMode        string `short:"m" placeholder:"MarkdownV2" help:"Message parse mode; plain text if omitted"`
 	Message          string `arg:"" optional:"" help:"Message to send. Read from STDIN if not specified"`
 }
 

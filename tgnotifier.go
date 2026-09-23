@@ -21,9 +21,12 @@ import (
 // See: https://stackoverflow.com/questions/68768069/telegram-error-badrequest-entities-too-long-error-when-trying-to-send-long-ma
 const MaxMsgLen int = 9500
 
+// ParseMode is telegram mode for parsing messages for formatting
+// see: https://core.telegram.org/bots/api#formatting-options
 type ParseMode = string
 
 const (
+	ParseModePlain    ParseMode = "" // no formatting, parse_mode is omitted
 	ParseModeMD       ParseMode = "MarkdownV2"
 	ParseModeHTML     ParseMode = "HTML"
 	ParseModeMDLegacy ParseMode = "Markdown"
@@ -32,7 +35,7 @@ const (
 // IsValidParseMode reports whether the given parse mode is valid.
 func IsValidParseMode(parseMode string) bool {
 	switch parseMode {
-	case ParseModeMD, ParseModeHTML, ParseModeMDLegacy:
+	case ParseModePlain, ParseModeMD, ParseModeHTML, ParseModeMDLegacy:
 		return true
 	default:
 		return false
@@ -113,7 +116,7 @@ func (bot *Bot) SendMessageWithContext(
 	if l <= 0 {
 		return ErrMessageEmpty
 	}
-	if parseMode != "" && !IsValidParseMode(parseMode) {
+	if !IsValidParseMode(parseMode) {
 		return ErrParseModeInvalid
 	}
 	if len(recipients) == 0 {
